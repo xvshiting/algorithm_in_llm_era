@@ -98,7 +98,7 @@ const complexityHint = computed(() => {
   const opsPerMs = 100000
   const maxOps = opsPerMs * [10, 50, 100, 500, 1000, 5000][t]
   
-  if (n * n <= maxOps) return 'O(n²) 可能可接受'
+  if (n * n <= maxOps) return '初步判断 O(n²) 可能可接受；若每次操作较重，仍需优化'
   if (n * Math.log2(n) <= maxOps) return '需要 O(n log n) 或更好'
   if (n <= maxOps) return '需要 O(n) 或更好'
   return '需要 O(log n) 或常数时间，考虑预处理/索引'

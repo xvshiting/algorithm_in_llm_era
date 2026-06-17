@@ -3,7 +3,7 @@ import { defineConfig } from 'vitepress'
 export default defineConfig({
   lang: 'zh-CN',
   title: '算法分析与设计',
-  description: '算法思维 → 人机协同 → Agent 设计',
+  description: '新时代的算法课程',
 
   base: '/algorithm_in_llm_era/',
   lastUpdated: true,
@@ -11,40 +11,37 @@ export default defineConfig({
   themeConfig: {
     nav: [
       { text: '首页', link: '/' },
-      { text: '章节', link: '/chapters/ch01-introduction' },
-      { text: '练习', link: '/exercises/ch01-exercises' },
+      { text: '章节', link: '/chapters/ch01/' },
     ],
 
     sidebar: {
+      '/chapters/ch01/': [
+        {
+          text: '第1章 当你让 AI 帮你写代码时',
+          items: [
+            { text: '导入', link: '/chapters/ch01/' },
+            { text: '1.1 你面对的是一个什么问题', link: '/chapters/ch01/01-problem' },
+            { text: '1.2 六问诊断法', link: '/chapters/ch01/02-six-questions' },
+            { text: '1.3 如何验证正确性', link: '/chapters/ch01/03-verification' },
+            { text: '1.4 复杂度判断', link: '/chapters/ch01/04-complexity' },
+            { text: '1.5 建模', link: '/chapters/ch01/05-modeling' },
+            { text: '1.6 练习', link: '/chapters/ch01/06-exercises' },
+          ],
+        },
+      ],
       '/chapters/': [
         {
           text: '章节内容',
           items: [
-            { text: '第1章 问题建模与算法思维', link: '/chapters/ch01-introduction' },
-            { text: '第2章 数据结构——抽象接口与扩张', link: '/chapters/ch02-data-structures' },
-            { text: '第3章 排序与查找——确定性到概率性', link: '/chapters/ch03-sorting-and-searching' },
-            { text: '第4章 图算法——建模比算法更重要', link: '/chapters/ch04-graph-algorithms' },
-            { text: '第5章 组合搜索——系统探索巨大空间', link: '/chapters/ch05-backtracking' },
-            { text: '第6章 动态规划——缓存与优化', link: '/chapters/ch06-dynamic-programming' },
-            { text: '第7章 贪心算法——局部选择的全局效果', link: '/chapters/ch07-greedy' },
-            { text: '第8章 NP完全性与应对——验证比发现容易', link: '/chapters/ch08-np-completeness' },
-            { text: '第9章 算法设计方法论——设计算法的算法', link: '/chapters/ch09-design-methodology' },
-          ],
-        },
-      ],
-      '/exercises/': [
-        {
-          text: '课后练习',
-          items: [
-            { text: '第1章 练习', link: '/exercises/ch01-exercises' },
-            { text: '第2章 练习', link: '/exercises/ch02-exercises' },
-            { text: '第3章 练习', link: '/exercises/ch03-exercises' },
-            { text: '第4章 练习', link: '/exercises/ch04-exercises' },
-            { text: '第5章 练习', link: '/exercises/ch05-exercises' },
-            { text: '第6章 练习', link: '/exercises/ch06-exercises' },
-            { text: '第7章 练习', link: '/exercises/ch07-exercises' },
-            { text: '第8章 练习', link: '/exercises/ch08-exercises' },
-            { text: '第9章 练习', link: '/exercises/ch09-exercises' },
+            { text: '第1章 当你让 AI 帮你写代码时', link: '/chapters/ch01/' },
+            { text: '第2章 数据结构', link: '/chapters/ch02-data-structures' },
+            { text: '第3章 排序与查找', link: '/chapters/ch03-sorting-and-searching' },
+            { text: '第4章 图算法', link: '/chapters/ch04-graph-algorithms' },
+            { text: '第5章 组合搜索', link: '/chapters/ch05-backtracking' },
+            { text: '第6章 动态规划', link: '/chapters/ch06-dynamic-programming' },
+            { text: '第7章 贪心算法', link: '/chapters/ch07-greedy' },
+            { text: '第8章 NP完全性与应对', link: '/chapters/ch08-np-completeness' },
+            { text: '第9章 算法设计方法论', link: '/chapters/ch09-design-methodology' },
           ],
         },
       ],
@@ -55,7 +52,7 @@ export default defineConfig({
     ],
 
     footer: {
-      message: '算法分析与设计课程电子教材',
+      message: '新时代的算法课程',
     },
 
     outline: {

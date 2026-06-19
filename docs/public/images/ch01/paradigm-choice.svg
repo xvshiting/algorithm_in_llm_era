@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 620" role="img" aria-labelledby="title desc">
+  <title id="title">算法范式选择决策树</title>
+  <desc id="desc">根据子问题关系、局部最优、枚举空间、容量约束选择算法范式。</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0L10 5L0 10z" fill="#516170"/>
+    </marker>
+    <style>
+      .bg{fill:#f7f9fc}.q{fill:#fff;stroke:#263447;stroke-width:2;rx:8}.a{stroke:#263447;stroke-width:2;rx:8}.title{font:700 25px system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;fill:#102033}.text{font:18px system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;fill:#394858}.arrow{stroke:#516170;stroke-width:3;fill:none;marker-end:url(#arrow)}.edge{font:700 17px system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;fill:#506070}
+    </style>
+  </defs>
+  <rect class="bg" width="1200" height="620"/>
+  <rect x="470" y="50" width="260" height="90" class="q"/>
+  <text x="600" y="88" text-anchor="middle" class="title">子问题关系？</text>
+  <text x="600" y="116" text-anchor="middle" class="text">独立还是重叠</text>
+
+  <rect x="130" y="215" width="220" height="88" fill="#d9ecff" class="a"/>
+  <text x="240" y="252" text-anchor="middle" class="title">分治</text>
+  <text x="240" y="280" text-anchor="middle" class="text">独立子问题</text>
+
+  <rect x="490" y="215" width="220" height="88" fill="#dff6e7" class="a"/>
+  <text x="600" y="252" text-anchor="middle" class="title">动态规划</text>
+  <text x="600" y="280" text-anchor="middle" class="text">重叠子问题</text>
+
+  <rect x="850" y="215" width="220" height="88" class="q"/>
+  <text x="960" y="252" text-anchor="middle" class="title">局部最优？</text>
+  <text x="960" y="280" text-anchor="middle" class="text">能否推出全局</text>
+
+  <rect x="735" y="395" width="220" height="88" fill="#fff1cc" class="a"/>
+  <text x="845" y="432" text-anchor="middle" class="title">贪心</text>
+  <text x="845" y="460" text-anchor="middle" class="text">需要交换论证</text>
+
+  <rect x="985" y="395" width="180" height="88" fill="#ffe2d7" class="a"/>
+  <text x="1075" y="432" text-anchor="middle" class="title">回溯</text>
+  <text x="1075" y="460" text-anchor="middle" class="text">搜索与剪枝</text>
+
+  <rect x="120" y="395" width="250" height="88" class="q"/>
+  <text x="245" y="432" text-anchor="middle" class="title">容量或分配？</text>
+  <text x="245" y="460" text-anchor="middle" class="text">源点、汇点、约束</text>
+
+  <rect x="440" y="395" width="220" height="88" fill="#e8e3ff" class="a"/>
+  <text x="550" y="432" text-anchor="middle" class="title">网络流</text>
+  <text x="550" y="460" text-anchor="middle" class="text">建模优先</text>
+
+  <path class="arrow" d="M500 135L285 215"/>
+  <text x="370" y="178" class="edge">独立</text>
+  <path class="arrow" d="M600 140V215"/>
+  <text x="615" y="180" class="edge">重叠</text>
+  <path class="arrow" d="M700 135L910 215"/>
+  <text x="805" y="178" class="edge">不确定</text>
+
+  <path class="arrow" d="M945 303L865 395"/>
+  <text x="872" y="355" class="edge">是</text>
+  <path class="arrow" d="M990 303L1060 395"/>
+  <text x="1038" y="355" class="edge">否</text>
+
+  <path class="arrow" d="M350 440H440"/>
+  <text x="382" y="430" class="edge">是</text>
+  <text x="600" y="555" text-anchor="middle" class="text">选范式不是贴标签，而是承担对应的证明义务</text>
+</svg>

@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 620" role="img" aria-labelledby="title desc">
+  <title id="title">六问法循环图</title>
+  <desc id="desc">六问法不是直线，卡住时回到问题规格、基线或建模假设。</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0L10 5L0 10z" fill="#516170"/>
+    </marker>
+    <style>
+      .bg{fill:#f7f9fc}.step{stroke:#263447;stroke-width:2;rx:8}.label{font:700 23px system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;fill:#102033}.text{font:18px system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;fill:#394858}.arrow{stroke:#516170;stroke-width:3;fill:none;marker-end:url(#arrow)}.return{stroke:#c45a32;stroke-width:4;fill:none;stroke-dasharray:10 8;marker-end:url(#arrow)}
+    </style>
+  </defs>
+  <rect class="bg" width="1200" height="620"/>
+  <rect x="70" y="245" width="155" height="90" fill="#d9ecff" class="step"/>
+  <text x="148" y="282" text-anchor="middle" class="label">理解</text>
+  <text x="148" y="312" text-anchor="middle" class="text">规格</text>
+  <rect x="255" y="245" width="155" height="90" fill="#dff6e7" class="step"/>
+  <text x="333" y="282" text-anchor="middle" class="label">基线</text>
+  <text x="333" y="312" text-anchor="middle" class="text">预算</text>
+  <rect x="440" y="245" width="155" height="90" fill="#fff1cc" class="step"/>
+  <text x="518" y="282" text-anchor="middle" class="label">检索</text>
+  <text x="518" y="312" text-anchor="middle" class="text">类型</text>
+  <rect x="625" y="245" width="155" height="90" fill="#ffe2d7" class="step"/>
+  <text x="703" y="282" text-anchor="middle" class="label">结构</text>
+  <text x="703" y="312" text-anchor="middle" class="text">特征</text>
+  <rect x="810" y="245" width="155" height="90" fill="#e8e3ff" class="step"/>
+  <text x="888" y="282" text-anchor="middle" class="label">范式</text>
+  <text x="888" y="312" text-anchor="middle" class="text">理由</text>
+  <rect x="995" y="245" width="155" height="90" fill="#e8eef3" class="step"/>
+  <text x="1073" y="282" text-anchor="middle" class="label">边界</text>
+  <text x="1073" y="312" text-anchor="middle" class="text">风险</text>
+
+  <path class="arrow" d="M225 290H255"/>
+  <path class="arrow" d="M410 290H440"/>
+  <path class="arrow" d="M595 290H625"/>
+  <path class="arrow" d="M780 290H810"/>
+  <path class="arrow" d="M965 290H995"/>
+
+  <path class="return" d="M1073 245C1045 105 195 105 148 245"/>
+  <text x="600" y="150" text-anchor="middle" class="label" fill="#c45a32">卡住时回到更早的问题</text>
+  <path class="return" d="M1073 335C1035 500 355 505 333 335"/>
+  <text x="600" y="482" text-anchor="middle" class="text">重新定义规格、重估基线、验证建模假设</text>
+</svg>

@@ -8,7 +8,7 @@ hero:
   actions:
     - theme: brand
       text: 开始学习
-      link: /chapters/ch01-introduction
+      link: /chapters/ch01/
     - theme: alt
       text: 课后练习
       link: /exercises/ch01-exercises

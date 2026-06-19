@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 620" role="img" aria-labelledby="title desc">
+  <title id="title">问题类型识别图</title>
+  <desc id="desc">输入、输出、约束信号指向候选算法类型，再验证成立条件。</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0L10 5L0 10z" fill="#516170"/>
+    </marker>
+    <style>
+      .bg{fill:#f7f9fc}.box{fill:#fff;stroke:#263447;stroke-width:2;rx:8}.signal{font:700 25px system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;fill:#102033}.text{font:19px system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;fill:#394858}.type{font:700 24px system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;fill:#102033}.arrow{stroke:#516170;stroke-width:3;fill:none;marker-end:url(#arrow)}
+    </style>
+  </defs>
+  <rect class="bg" width="1200" height="620"/>
+  <rect x="80" y="100" width="260" height="110" fill="#d9ecff" class="box"/>
+  <text x="210" y="145" text-anchor="middle" class="signal">输入信号</text>
+  <text x="210" y="177" text-anchor="middle" class="text">图、序列、矩阵、流</text>
+
+  <rect x="80" y="255" width="260" height="110" fill="#dff6e7" class="box"/>
+  <text x="210" y="300" text-anchor="middle" class="signal">输出信号</text>
+  <text x="210" y="332" text-anchor="middle" class="text">最值、路径、排序、匹配</text>
+
+  <rect x="80" y="410" width="260" height="110" fill="#fff1cc" class="box"/>
+  <text x="210" y="455" text-anchor="middle" class="signal">约束信号</text>
+  <text x="210" y="487" text-anchor="middle" class="text">实时、近似、内存受限</text>
+
+  <rect x="485" y="235" width="230" height="145" fill="#ffffff" class="box"/>
+  <text x="600" y="292" text-anchor="middle" class="signal">类型假设</text>
+  <text x="600" y="326" text-anchor="middle" class="text">先提出，再验证</text>
+
+  <rect x="850" y="60" width="255" height="80" fill="#d9ecff" class="box"/>
+  <text x="978" y="110" text-anchor="middle" class="type">图算法</text>
+  <rect x="850" y="170" width="255" height="80" fill="#dff6e7" class="box"/>
+  <text x="978" y="220" text-anchor="middle" class="type">排序 / 查找</text>
+  <rect x="850" y="280" width="255" height="80" fill="#fff1cc" class="box"/>
+  <text x="978" y="330" text-anchor="middle" class="type">DP / 贪心</text>
+  <rect x="850" y="390" width="255" height="80" fill="#ffe2d7" class="box"/>
+  <text x="978" y="440" text-anchor="middle" class="type">匹配 / 网络流</text>
+  <rect x="850" y="500" width="255" height="80" fill="#e8e3ff" class="box"/>
+  <text x="978" y="550" text-anchor="middle" class="type">流式 / 近似</text>
+
+  <path class="arrow" d="M340 155C405 155 430 245 485 285"/>
+  <path class="arrow" d="M340 310H485"/>
+  <path class="arrow" d="M340 465C405 465 430 375 485 335"/>
+  <path class="arrow" d="M715 305C770 210 785 110 850 100"/>
+  <path class="arrow" d="M715 305C770 250 785 215 850 210"/>
+  <path class="arrow" d="M715 305H850"/>
+  <path class="arrow" d="M715 320C770 365 785 425 850 430"/>
+  <path class="arrow" d="M715 335C770 430 785 535 850 540"/>
+  <text x="600" y="515" text-anchor="middle" class="text">算法名字不是答案，成立条件才是答案</text>
+</svg>

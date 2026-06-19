@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 620" role="img" aria-labelledby="title desc">
+  <title id="title">问题规格卡示意图</title>
+  <desc id="desc">输入、输出、规模、约束、例子共同组成问题规格卡。</desc>
+  <defs>
+    <style>
+      .bg{fill:#f7f9fc}.card{stroke:#263447;stroke-width:2;rx:8}.title{font:700 32px system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;fill:#102033}.label{font:700 25px system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;fill:#102033}.text{font:19px system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;fill:#394858}.line{stroke:#7d8996;stroke-width:3}
+    </style>
+  </defs>
+  <rect class="bg" width="1200" height="620"/>
+  <rect x="430" y="235" width="340" height="150" fill="#ffffff" class="card"/>
+  <text x="600" y="300" text-anchor="middle" class="title">问题规格卡</text>
+  <text x="600" y="340" text-anchor="middle" class="text">先定义问题，再讨论算法</text>
+
+  <rect x="95" y="75" width="260" height="120" fill="#d9ecff" class="card"/>
+  <text x="225" y="125" text-anchor="middle" class="label">输入</text>
+  <text x="225" y="158" text-anchor="middle" class="text">格式、来源、范围</text>
+
+  <rect x="470" y="50" width="260" height="120" fill="#dff6e7" class="card"/>
+  <text x="600" y="100" text-anchor="middle" class="label">输出</text>
+  <text x="600" y="133" text-anchor="middle" class="text">值、列表、决策</text>
+
+  <rect x="845" y="75" width="260" height="120" fill="#fff1cc" class="card"/>
+  <text x="975" y="125" text-anchor="middle" class="label">规模</text>
+  <text x="975" y="158" text-anchor="middle" class="text">平均、峰值、增长</text>
+
+  <rect x="240" y="430" width="260" height="120" fill="#ffe2d7" class="card"/>
+  <text x="370" y="480" text-anchor="middle" class="label">约束</text>
+  <text x="370" y="513" text-anchor="middle" class="text">时间、空间、准确率</text>
+
+  <rect x="700" y="430" width="260" height="120" fill="#e8e3ff" class="card"/>
+  <text x="830" y="480" text-anchor="middle" class="label">例子</text>
+  <text x="830" y="513" text-anchor="middle" class="text">正常、边界、反例</text>
+
+  <line class="line" x1="355" y1="170" x2="470" y2="245"/>
+  <line class="line" x1="600" y1="170" x2="600" y2="235"/>
+  <line class="line" x1="845" y1="170" x2="730" y2="245"/>
+  <line class="line" x1="500" y1="450" x2="535" y2="385"/>
+  <line class="line" x1="700" y1="450" x2="665" y2="385"/>
+</svg>

@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 650" role="img" aria-labelledby="title desc">
+  <title id="title">复杂度预算图</title>
+  <desc id="desc">展示输入规模增长时，不同复杂度的工作量如何拉开距离。</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0L10 5L0 10z" fill="#465465"/>
+    </marker>
+    <style>
+      .bg{fill:#f8fafc}
+      .axis{stroke:#465465;stroke-width:3;fill:none;marker-end:url(#arrow)}
+      .grid{stroke:#d9e0e8;stroke-width:1.5}
+      .label{font:18px system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;fill:#405064}
+      .title{font:700 26px system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;fill:#102033}
+      .small{font:16px system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;fill:#536273}
+      .line1{stroke:#2f7ed8;stroke-width:5;fill:none}
+      .line2{stroke:#2d9b68;stroke-width:5;fill:none}
+      .line3{stroke:#d08a22;stroke-width:5;fill:none}
+      .line4{stroke:#c6453d;stroke-width:5;fill:none}
+      .card{fill:#fff;stroke:#263447;stroke-width:2;rx:8}
+    </style>
+  </defs>
+
+  <rect class="bg" width="1200" height="650"/>
+  <text x="600" y="58" text-anchor="middle" class="title">同样的 n 变大，不同增长方式会分道扬镳</text>
+
+  <line x1="130" y1="535" x2="1080" y2="535" class="axis"/>
+  <line x1="130" y1="535" x2="130" y2="105" class="axis"/>
+
+  <line x1="300" y1="535" x2="300" y2="115" class="grid"/>
+  <line x1="500" y1="535" x2="500" y2="115" class="grid"/>
+  <line x1="700" y1="535" x2="700" y2="115" class="grid"/>
+  <line x1="900" y1="535" x2="900" y2="115" class="grid"/>
+
+  <text x="600" y="598" text-anchor="middle" class="label">输入规模 n</text>
+  <text x="62" y="320" text-anchor="middle" class="label" transform="rotate(-90 62 320)">工作量</text>
+
+  <path class="line1" d="M155 515C350 495 600 470 1030 430"/>
+  <path class="line2" d="M155 508C350 478 610 420 1030 310"/>
+  <path class="line3" d="M155 505C330 480 575 360 1030 125"/>
+  <path class="line4" d="M155 500C250 455 315 330 355 120"/>
+
+  <rect x="760" y="150" width="300" height="184" class="card"/>
+  <line x1="790" y1="188" x2="850" y2="188" class="line1"/>
+  <text x="872" y="194" class="label">O(n)：跟输入一起长</text>
+  <line x1="790" y1="228" x2="850" y2="228" class="line2"/>
+  <text x="872" y="234" class="label">O(n log n)：多一些</text>
+  <line x1="790" y1="268" x2="850" y2="268" class="line3"/>
+  <text x="872" y="274" class="label">O(n²)：很快变大</text>
+  <line x1="790" y1="308" x2="850" y2="308" class="line4"/>
+  <text x="872" y="314" class="label">O(2ⁿ)：通常失控</text>
+
+  <rect x="170" y="120" width="395" height="112" class="card"/>
+  <text x="368" y="158" text-anchor="middle" class="title">复杂度不是秒表</text>
+  <text x="368" y="192" text-anchor="middle" class="small">它是输入扩大时的增长模型</text>
+  <text x="368" y="216" text-anchor="middle" class="small">先估增长，再用真实数据测速</text>
+</svg>

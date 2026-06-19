@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 640" role="img" aria-labelledby="title desc">
+  <title id="title">建模闭环图</title>
+  <desc id="desc">展示现实任务如何经过建模卡变成可计算模型，再通过算法实现和现实验收回到问题本身。</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0L10 5L0 10z" fill="#506070"/>
+    </marker>
+    <style>
+      .bg{fill:#f8fafc}
+      .card{fill:#fff;stroke:#263447;stroke-width:2.2;rx:8}
+      .real{fill:#dceeff}
+      .model{fill:#e3f7e9}
+      .compute{fill:#fff0c9}
+      .check{fill:#ffe2d8}
+      .title{font:700 27px system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;fill:#102033}
+      .head{font:700 23px system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;fill:#102033}
+      .text{font:18px system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;fill:#394858}
+      .small{font:16px system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;fill:#526274}
+      .arrow{stroke:#506070;stroke-width:3;fill:none;marker-end:url(#arrow)}
+      .loop{stroke:#7a5fb8;stroke-width:3.5;fill:none;stroke-dasharray:9 7;marker-end:url(#arrow)}
+    </style>
+  </defs>
+
+  <rect class="bg" width="1200" height="640"/>
+  <text x="600" y="58" text-anchor="middle" class="title">建模先回答：什么答案合法？什么答案更好？</text>
+
+  <rect x="65" y="165" width="230" height="180" class="card real"/>
+  <text x="180" y="210" text-anchor="middle" class="head">现实任务</text>
+  <text x="180" y="250" text-anchor="middle" class="text">订午餐</text>
+  <text x="180" y="282" text-anchor="middle" class="text">排会议</text>
+  <text x="180" y="314" text-anchor="middle" class="text">安排学习</text>
+
+  <rect x="355" y="135" width="250" height="240" class="card model"/>
+  <text x="480" y="180" text-anchor="middle" class="head">建模卡</text>
+  <text x="480" y="218" text-anchor="middle" class="text">输入 / 输出</text>
+  <text x="480" y="250" text-anchor="middle" class="text">硬约束</text>
+  <text x="480" y="282" text-anchor="middle" class="text">目标</text>
+  <text x="480" y="314" text-anchor="middle" class="text">规模 / 边界</text>
+  <text x="480" y="346" text-anchor="middle" class="small">先写清楚，再谈算法</text>
+
+  <rect x="665" y="165" width="230" height="180" class="card compute"/>
+  <text x="780" y="210" text-anchor="middle" class="head">可计算模型</text>
+  <text x="780" y="250" text-anchor="middle" class="text">对象表示</text>
+  <text x="780" y="282" text-anchor="middle" class="text">合法性检查</text>
+  <text x="780" y="314" text-anchor="middle" class="text">评分规则</text>
+
+  <rect x="955" y="165" width="190" height="180" class="card"/>
+  <text x="1050" y="210" text-anchor="middle" class="head">算法实现</text>
+  <text x="1050" y="250" text-anchor="middle" class="text">生成方案</text>
+  <text x="1050" y="282" text-anchor="middle" class="text">检查约束</text>
+  <text x="1050" y="314" text-anchor="middle" class="text">比较优劣</text>
+
+  <rect x="355" y="455" width="540" height="105" class="card check"/>
+  <text x="625" y="497" text-anchor="middle" class="head">回到现实验收</text>
+  <text x="625" y="533" text-anchor="middle" class="text">模型接受的方案，现实中真的能接受吗？</text>
+
+  <path class="arrow" d="M295 255H355"/>
+  <path class="arrow" d="M605 255H665"/>
+  <path class="arrow" d="M895 255H955"/>
+  <path class="loop" d="M1050 345C1050 435 955 507 895 507"/>
+  <path class="loop" d="M355 507C215 507 180 430 180 345"/>
+  <path class="loop" d="M480 455V375"/>
+
+  <text x="625" y="610" text-anchor="middle" class="small">建模错误不会自动报错；它会让正确代码认真地解错问题。</text>
+</svg>

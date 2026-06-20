@@ -1101,12 +1101,12 @@ def detect_anomaly(stream):
 
 | 节 | 标题 | 核心问题 | 核心工具 | 空间复杂度 |
 |----|------|---------|----------|-----------|
-| [10.1](01-cost-model.md) | 流式成本模型 | O(n)的静态算法，流式下为何"不可能精确"？ | 近似保证 | - |
+| [10.1](01-streaming-cost-model.md) | 流式成本模型 | O(n)的静态算法，流式下为何"不可能精确"？ | 近似保证 | - |
 | [10.2](02-sliding-window.md) | 滑动窗口 | 内存有限时如何处理无限数据？ | 滑动窗口、指数衰减 | O(window_size) |
 | [10.3](03-count-min-sketch.md) | 频率估计 | 如何用少量内存估计频率？ | Count-Min Sketch | O(1/ε · log(1/δ)) |
 | [10.4](04-hyperloglog.md) | 去重计数 | 如何用少量内存估计基数？ | HyperLogLog | O(log log N) |
-| [10.5](05-online-algorithms.md) | 流式聚合 | 数据流动时如何做决策？ | 竞争比分析 | - |
-| [10.6](06-llm-streaming.md) | LLM流式视角 | LLM时代的流式挑战？ | 上下文窗口 | - |
+| [10.5](05-streaming-aggregation.md) | 流式聚合 | 数据流动时如何做决策？ | 竞争比分析 | - |
+| [10.6](06-llm-streaming-view.md) | LLM流式视角 | LLM时代的流式挑战？ | 上下文窗口 | - |
 | [10.7](07-exercises.md) | 综合练习 | 如何审查LLM的流式方案？ | 综合应用 | - |
 
 ### 核心概念预告

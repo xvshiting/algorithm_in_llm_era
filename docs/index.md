@@ -20,6 +20,6 @@ features:
     details: LLM 不是替代品而是协作工具——学会评判、引导、迭代
   - title: Agent 设计
     details: 将算法思维编码为可复用的 Skill 和 Agent，从使用者到设计者
-  - title: 三层练习
-    details: 传统练习 → LLM 协同练习 → Agent 设计练习，逐阶递进
+  - title: 练习闭环
+    details: 围绕每章核心问题设计证明、实现、审查和反思任务
 ---

@@ -1,0 +1,46 @@
+[
+  {
+    "question": "Python set 最适合下列哪类操作？",
+    "options": [
+      "按下标访问第 k 个元素",
+      "判断元素是否出现过",
+      "按优先级取最小元素",
+      "保持所有元素严格排序"
+    ],
+    "answer": 1,
+    "explanation": "set 的核心用途是成员查询和去重。"
+  },
+  {
+    "question": "Python dict 的核心接口可以理解为？",
+    "options": [
+      "按 key 找 value",
+      "只保存不重复元素",
+      "只从头部删除元素",
+      "按优先级排序"
+    ],
+    "answer": 0,
+    "explanation": "dict 是键值映射，适合按 key 快速查找 value。"
+  },
+  {
+    "question": "哈希表通常的 Θ(1) 查找是什么意义？",
+    "options": [
+      "数学上永远最坏 Θ(1)",
+      "期望或通常情况下 Θ(1)，最坏情况仍可能更差",
+      "只有元素少于 10 个才是 Θ(1)",
+      "只适用于字符串"
+    ],
+    "answer": 1,
+    "explanation": "哈希表有冲突和扩容等问题，通常快速，但不能简单说所有情况下最坏都是常数。"
+  },
+  {
+    "question": "下面哪个是 agent 常见的数据结构错误？",
+    "options": [
+      "用 set 做成员查询",
+      "用 dict 按 id 查对象",
+      "用 list 反复做大量 membership check",
+      "用 deque 做队列"
+    ],
+    "answer": 2,
+    "explanation": "大量 `x in list` 会反复线性扫描，可能把整体复杂度拖到平方级。"
+  }
+]

@@ -1,0 +1,46 @@
+[
+  {
+    "question": "Python list 最接近哪种结构？",
+    "options": [
+      "链表",
+      "动态数组",
+      "哈希表",
+      "优先队列"
+    ],
+    "answer": 1,
+    "explanation": "Python list 支持按下标快速访问和末尾追加，整体更接近动态数组。"
+  },
+  {
+    "question": "`items.pop(0)` 在普通 Python list 中通常是什么复杂度？",
+    "options": [
+      "Θ(1)",
+      "Θ(log n)",
+      "Θ(n)",
+      "Θ(n²)"
+    ],
+    "answer": 2,
+    "explanation": "删除头部元素后，后面的元素需要整体左移，所以单次 pop(0) 通常是 Θ(n)。"
+  },
+  {
+    "question": "为什么 `append` 通常说是摊还 Θ(1)？",
+    "options": [
+      "因为它永远不会触发扩容",
+      "因为扩容偶尔很贵，但连续多次追加的总成本仍是线性的",
+      "因为 Python 忽略了扩容成本",
+      "因为 append 会自动排序"
+    ],
+    "answer": 1,
+    "explanation": "动态数组容量不够时会扩容和复制，但这种昂贵操作发生次数少，分摊到一串 append 上仍是常数级。"
+  },
+  {
+    "question": "下面哪个操作最容易让 list 在队列场景中变慢？",
+    "options": [
+      "append(x)",
+      "pop()",
+      "pop(0)",
+      "items[0]"
+    ],
+    "answer": 2,
+    "explanation": "队列从头取元素时，如果用 list.pop(0)，每次都可能移动剩余元素。大队列应考虑 deque。"
+  }
+]

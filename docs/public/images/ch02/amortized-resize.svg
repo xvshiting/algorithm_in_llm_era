@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="430" viewBox="0 0 960 430" role="img" aria-labelledby="title desc">
+  <title id="title">动态数组扩容的摊还成本</title>
+  <desc id="desc">容量按比例扩张时，少数复制操作分摊到多次追加上。</desc>
+  <defs>
+    <style>
+      .bg { fill: #f8fafc; }
+      .slot { fill: #ffffff; stroke: #94a3b8; stroke-width: 2; rx: 6; }
+      .filled { fill: #dbeafe; stroke: #2563eb; stroke-width: 2; rx: 6; }
+      .copy { fill: #fee2e2; stroke: #dc2626; stroke-width: 2; rx: 6; }
+      .text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #0f172a; font-size: 22px; font-weight: 700; }
+      .small { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #475569; font-size: 16px; }
+      .code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; fill: #334155; font-size: 15px; }
+      .arrow { stroke: #64748b; stroke-width: 2.5; fill: none; marker-end: url(#arrowhead); }
+    </style>
+    <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L9,3 L0,6 Z" fill="#64748b" />
+    </marker>
+  </defs>
+  <rect class="bg" width="960" height="430" />
+  <text class="text" x="480" y="44" text-anchor="middle">append 的摊还直觉：偶尔复制，长期仍是线性总成本</text>
+
+  <text class="small" x="78" y="104">容量 2，已满</text>
+  <rect class="filled" x="78" y="124" width="54" height="42" />
+  <rect class="filled" x="140" y="124" width="54" height="42" />
+
+  <path class="arrow" d="M226 146 L316 146" />
+  <text class="small" x="248" y="130">扩容</text>
+
+  <text class="small" x="340" y="104">容量 4，复制旧元素，再追加</text>
+  <rect class="copy" x="340" y="124" width="54" height="42" />
+  <rect class="copy" x="402" y="124" width="54" height="42" />
+  <rect class="filled" x="464" y="124" width="54" height="42" />
+  <rect class="slot" x="526" y="124" width="54" height="42" />
+
+  <path class="arrow" d="M612 146 L702 146" />
+  <text class="small" x="628" y="130">继续追加</text>
+
+  <text class="small" x="724" y="104">大多数追加很便宜</text>
+  <rect class="filled" x="724" y="124" width="42" height="42" />
+  <rect class="filled" x="774" y="124" width="42" height="42" />
+  <rect class="filled" x="824" y="124" width="42" height="42" />
+  <rect class="filled" x="874" y="124" width="42" height="42" />
+
+  <rect class="slot" x="118" y="242" width="724" height="92" />
+  <text class="code" x="480" y="282" text-anchor="middle">1 + 2 + 4 + 8 + ... &lt; 2n</text>
+  <text class="small" x="480" y="314" text-anchor="middle">所有扩容复制次数加起来仍然是线性级别</text>
+
+  <text class="small" x="480" y="380" text-anchor="middle">结论：单次 append 最坏可能很贵，但连续 n 次 append 的总成本是 Θ(n)，摊还每次 Θ(1)</text>
+</svg>

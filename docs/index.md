@@ -75,28 +75,42 @@ features:
   color: var(--vp-c-text-1);
   font-weight: 500;
 }
+.version-note {
+  margin-top: 1rem;
+  padding: 0.75rem;
+  background: var(--vp-c-warning-soft);
+  border-radius: 8px;
+  font-size: 0.85rem;
+  color: var(--vp-c-text-2);
+}
 </style>
 
 <div class="version-info">
 
-<span class="version-badge">v1.0.0</span>
+<span class="version-badge">v0.9.1</span>
 <span class="update-time">更新于 2026-06-21</span>
 
 ### 本次更新
 
-- ✅ 完成 Ch1-12 全书结构
+- ✅ 添加版本信息和更新历史展示
+- ✅ Ch1-12 全书结构完成
 - ✅ Ch3 重写：推导式证明 + 指示器随机变量
 - ✅ Ch7 贪心章节拆分为 7 个小节
-- ✅ 全书导航配置统一
 
 ### 版本历史
 
 | 版本 | 时间 | 主要更新 |
 |------|------|----------|
-| v1.0.0 | 2026-06-21 | 全书12章完成，导航配置统一 |
+| v0.9.1 | 2026-06-21 | 添加版本信息、更新历史展示 |
 | v0.9.0 | 2026-06-20 | Ch7-12 内容完成 |
 | v0.8.0 | 2026-06-15 | Ch4-6 完成：图算法/回溯/动态规划 |
 | v0.7.0 | 2026-06-10 | Ch3 重写：推导式证明风格 |
 | v0.5.0 | 2026-06-05 | Ch1-2 完成：算法基础 |
+
+<div class="version-note">
+
+**版本策略**：小更新发布小版本（如 v0.9.1），大版本（如 v1.0）需作者确认。当前尚未达到 v1.0 标准。
+
+</div>
 
 </div>

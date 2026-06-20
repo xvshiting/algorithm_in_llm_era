@@ -1,22 +1,21 @@
 # 3.9 二分查找与超越
 
-## 学习目标
+## 这一节，你能解决什么问题
 
-学完这一节，你能：
+学完这一节，你能够：
 
-- 理解二分查找的分治本质
-- 掌握二分查找的变体应用
-- 理解 vEB 树如何突破 O(log n) 到 O(log log n)
-- 将二分查找与 LLM 的 log-probability 搜索关联
+1. **正确实现二分查找**，避免边界 bug（如溢出）
+2. **理解二分查找的变体应用**（lower_bound、upper_bound）
+3. **判断什么时候用二分查找**，什么时候用其他方法
 
 ---
 
-## War Story：二分查找的 bug
+## 问题情境
 
-2006年，Joshua Bloch 发现 Java 的 `Arrays.binarySearch` 有一个隐藏 bug：
+2006年，Joshua Bloch 发现 Java 的 `Arrays.binarySearch` 有隐藏 bug：
 
 ```java
-int mid = (low + high) / 2;  // 当 low + high > INT_MAX 时溢出
+int mid = (low + high) / 2;  // low + high 溢出！
 ```
 
 修复：
@@ -25,39 +24,64 @@ int mid = (low + high) / 2;  // 当 low + high > INT_MAX 时溢出
 int mid = low + (high - low) / 2;  // 避免溢出
 ```
 
-**教训**：二分查找看起来简单，但边界条件容易出错。让 agent 写二分查找时，要特别审查边界。
+**教训**：二分查找看起来简单，但边界容易出错。
 
 ---
 
-## 二分查找
+## 直观思路
 
-**问题**：在有序数组 A 中查找元素 x
+**二分查找**：每次排除一半，快速缩小范围。
 
-**算法**：
+有序数组中找元素：
 
-```
-BINARY-SEARCH(A, x):
-    low = 0, high = len(A) - 1
+- 看中间元素
+- 如果比目标大，排除右边一半
+- 如果比目标小，排除左边一半
+- 重复
+
+**关键**：每次排除一半 → log n 次 → O(log n)。
+
+---
+
+## 规范定义
+
+### 二分查找
+
+**输入**：有序数组 A，目标 x
+**输出**：x 的位置（或 -1 如果不存在）
+
+### 复杂度
+
+O(log n)
+
+---
+
+## 算法实现
+
+### 基本二分查找
+
+```python
+def binary_search(A, x):
+    low = 0
+    high = len(A) - 1
     while low <= high:
-        mid = low + (high - low) // 2
+        mid = low + (high - low) // 2  # 避免溢出
         if A[mid] == x:
             return mid
         elif A[mid] < x:
             low = mid + 1
         else:
             high = mid - 1
-    return -1  // 未找到
+    return -1
 ```
 
-**复杂度**：O(log n)
-
-**图解说明**：
+**一步步执行**：
 
 ```
 数组：[1, 3, 5, 7, 9, 11, 13, 15, 17, 19]
 查找：11
 
-Step 1: mid=5, A[5]=11 → 找到！
+Step 1: low=0, high=9, mid=5, A[5]=11 → 找到！
 
 查找：8
 
@@ -68,15 +92,12 @@ Step 4: mid=4, A[4]=9 > 8 → high=3
 Step 5: low > high → 未找到
 ```
 
----
+### 变体：lower_bound（第一个 ≥ x 的位置）
 
-## 二分查找的变体
-
-### 1. 查找第一个匹配位置（重复元素）
-
-```
-LOWER-BOUND(A, x):
-    low = 0, high = len(A)
+```python
+def lower_bound(A, x):
+    low = 0
+    high = len(A)
     while low < high:
         mid = low + (high - low) // 2
         if A[mid] >= x:
@@ -86,133 +107,159 @@ LOWER-BOUND(A, x):
     return low
 ```
 
-### 2. 查找最后一个匹配位置
+### 变体：upper_bound（第一个 > x 的位置）
 
-```
-UPPER-BOUND(A, x):
-    low = 0, high = len(A)
+```python
+def upper_bound(A, x):
+    low = 0
+    high = len(A)
     while low < high:
         mid = low + (high - low) // 2
         if A[mid] > x:
             high = mid
         else:
             low = mid + 1
-    return low - 1
-```
-
-### 3. 计算匹配元素数量
-
-```
-COUNT(A, x):
-    return UPPER-BOUND(A, x) - LOWER-BOUND(A, x)
-```
-
-### 4. 平方根近似
-
-```
-SQRT(x):
-    low = 0, high = x
-    while low <= high:
-        mid = low + (high - low) // 2
-        if mid² <= x < (mid+1)²:
-            return mid
-        elif mid² > x:
-            high = mid - 1
-        else:
-            low = mid + 1
+    return low
 ```
 
 ---
 
-## vEB 树：突破 O(log n)
+## 这个方法是怎么想到的
 
-**问题**：二分查找 O(log n) 能更快吗？
+### 二分查找的思路
 
-**答案**：当键是整数时，可以！
+**问题**：有序数组中找元素。
 
-**vEB 树（van Emde Boas Tree）**：
+**朴素方法**：逐个检查 → O(n)
 
-核心思想：利用键的位结构，分层"跳过"
+**洞察**：有序 → 比中间元素 → 排除一半
 
-```
-键 x 是 u 位整数：
-- 高 u/2 位：集群编号
-- 低 u/2 位：集群内位置
+**关键**：每次缩小一半 → log n 次
 
-查找 x：
-1. 在 summary（集群编号索引）中找集群
-2. 在集群中找位置
+### 为什么会有 bug？
 
-每步 O(log u/2) = O(log log u)
-总共 O(log log u)
+**溢出 bug**：
+
+```java
+int mid = (low + high) / 2;
 ```
 
-**复杂度**：O(log log u)，u 是键值范围
+当 low + high > INT_MAX，溢出变成负数。
 
-**空间**：Θ(u)
+**正确写法**：
 
-**适用场景**：
-
-- 键是整数且范围有限
-- 需要超快速查找（如高频交易）
-- 空间不敏感
+```java
+int mid = low + (high - low) / 2;
+```
 
 ---
 
-## 与 LLM 的关联
+## 正确性分析
 
-### 1. Log-probability 搜索
+### 循环不变式
 
-LLM 的 log-probability 空间可以类比有序数组：
+**不变式**：每次循环开始时：
+- 目标 x 如果存在，一定在 [low, high] 范围内
+- [low, high] 外的元素都不是 x
 
-```
-LLM 输出：log-probabilities 排序后递减
+**证明**：
 
-最高概率 token → 最高 log-prob
-Top-k → 前 k 个
-Top-p → 累积概率 ≥ p
+初始化：low=0, high=len(A)-1，范围是整个数组。成立。
 
-本质：在 log-prob 数组中"搜索"截断点
-```
+保持：
+- 如果 A[mid] < x，排除 [low, mid]，x 必在 [mid+1, high]
+- 如果 A[mid] > x，排除 [mid, high]，x 必在 [low, mid-1]
 
-### 2. Embedding 空间搜索
+终止：
+- 找到 x → 返回位置
+- low > high → x 不存在
 
-LLM 的 embedding 空间是高维向量空间：
+---
 
-```
-传统方法：k-NN 线性搜索 → O(n)
-近似方法：LSH（局部敏感哈希）→ O(1) 期望
+## 复杂度分析
 
-类比：
-- 二分查找：有序数组的精确搜索 → O(log n)
-- LSH：高维空间的近似搜索 → O(1) 期望
-```
+每次循环排除一半。
+
+循环次数 = log₂(n)
+
+时间复杂度 = O(log n)
+
+---
+
+## 什么时候不该用这个方法
+
+### 该用二分查找的情况
+
+- 数组有序
+- 静态数据（不频繁插入删除）
+
+### 不该用二分查找的情况
+
+- 数组无序（先排序 Θ(n log n)）
+- 频繁插入删除（用哈希表或树）
+
+---
+
+## 本节小结
+
+**解决了什么问题？**
+
+有序数组快速查找，O(log n)。
+
+**核心方法是什么？**
+
+每次排除一半 → log n 次。
+
+**为什么正确？**
+
+循环不变式保证目标始终在范围内。
+
+**代价是什么？**
+
+需要有序数组。如果频繁插入删除，维护有序的成本高。
+
+**适用场景？**
+
+静态有序数据查找。
 
 ---
 
 ## 练习
 
-### 层次一（基础）
+### 基本理解
 
-1. **二分查找实现**：实现二分查找，特别注意边界条件（low + high 溢出）。
+**练习 1**：实现二分查找，特别注意边界条件。
 
-2. **变体验证**：对数组 [1, 2, 2, 2, 3, 4]，计算 LOWER-BOUND(2) 和 UPPER-BOUND(2)。
+**练习 2**：数组 [1, 2, 2, 2, 3, 4]，计算 lower_bound(2) 和 upper_bound(2)。
 
-3. **平方根**：用二分查找计算 sqrt(1000) 的整数部分。
+**练习 3**：用二分查找计算 sqrt(1000) 的整数部分。
 
-### 层次二（LLM 协同）
+### 错误诊断
 
-4. **边界 bug 检测**：让 LLM 写二分查找，审查是否有边界 bug。
+**练习 4**：以下实现有什么问题？
 
-5. **vEB 探索**：让 LLM 解释 vEB 树的结构，类比二分查找的"跳过"机制。
+```python
+def binary_bug(A, x):
+    low, high = 0, len(A) - 1
+    while low < high:           # ← 这里
+        mid = (low + high) // 2  # ← 这里
+        if A[mid] == x:
+            return mid
+        elif A[mid] < x:
+            low = mid           # ← 这里
+        else:
+            high = mid          # ← 这里
+    return -1
+```
 
-### 层次三（Agent 设计）
+分析：循环条件、溢出、范围更新是否正确？
 
-6. **搜索策略 Skill**：设计一个 Skill，在 log-prob 空间中选择搜索策略（二分 vs 线性）。
+### 方法应用
+
+**练习 5**：设计一个 Skill，在 log-prob 空间中选择搜索策略。
 
 ---
 
-## 参考文献
+**上一节：[3.8 字符串匹配](/chapters/ch03/08-string-matching)**
 
-- CLRS, *Introduction to Algorithms*, 4th ed., Section 25.2
-- van Emde Boas, "Preserving Order in a Forest in Less Than Logarithmic Time", STOC 1975
+**下一节：[3.10 综合练习](/chapters/ch03/10-exercises)**

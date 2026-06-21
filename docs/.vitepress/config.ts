@@ -1,4 +1,5 @@
 import { defineConfig } from 'vitepress'
+import katex from 'markdown-it-katex'
 
 export default defineConfig({
   lang: 'zh-CN',
@@ -7,6 +8,19 @@ export default defineConfig({
 
   base: '/algorithm_in_llm_era/',
   lastUpdated: true,
+
+  markdown: {
+    config: (md) => {
+      md.use(katex, {
+        throwOnError: false,
+        errorColor: '#cc0000'
+      })
+    }
+  },
+
+  head: [
+    [ 'link', { rel: 'stylesheet', href: 'https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css' } ]
+  ],
 
   themeConfig: {
     nav: [

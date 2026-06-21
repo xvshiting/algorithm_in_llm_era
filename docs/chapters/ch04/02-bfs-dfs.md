@@ -95,6 +95,10 @@ def dfs_visit(graph, u, color, d, f, parent):
     d[u] = time      # 发现时间
     color[u] = 'GRAY'
     
+    # 边界情况处理：
+    # 1. 如果 u 无邻居，for 循环自动跳过，u 将被标记为 BLACK
+    # 2. 如果 graph.neighbors(u) 返回空列表（顶点不存在或无邻居），也能正确处理
+    # 3. 递归终止条件：所有可达顶点都已访问（color != WHITE）
     for v in graph.neighbors(u):
         if color[v] == 'WHITE':
             parent[v] = u

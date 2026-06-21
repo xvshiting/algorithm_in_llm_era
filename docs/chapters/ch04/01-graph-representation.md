@@ -158,6 +158,9 @@ class GraphMatrix:
         return self.matrix[u][v] != 0
     
     def neighbors(self, u):
+        # 边界检查：顶点 u 必须在有效范围内
+        if u < 0 or u >= self.n:
+            raise ValueError(f"顶点 {u} 不存在，有效范围: [0, {self.n-1}]")
         return [v for v in range(self.n) if self.matrix[u][v] != 0]
 ```
 
@@ -174,6 +177,13 @@ class GraphList:
         self.graph[u].append((v, weight))
     
     def neighbors(self, u):
+        # 边界处理：顶点不存在时返回空列表
+        # 注意：由于使用 defaultdict，访问不存在的顶点会自动创建空列表
+        # 这里显式检查以区分"顶点不存在"和"顶点无邻居"两种情况
+        if u not in self.graph:
+            # 可选：返回空列表（静默处理）或抛出异常（严格模式）
+            # 此处选择返回空列表，保持与 defaultdict 行为一致
+            return []
         return self.graph[u]
     
     def vertices(self):

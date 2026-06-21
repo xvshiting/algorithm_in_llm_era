@@ -13,6 +13,51 @@
 
 ---
 
+## 🔥 开篇故事：用户注册系统的"缓慢登录"
+
+2021年，某社交平台的登录功能在大促期间出现严重延迟。用户反馈：
+
+```
+登录时间从 0.5 秒变成了 5 秒
+高峰期甚至需要等待 30 秒
+```
+
+运维排查发现，登录验证的代码是：
+
+```python
+def verify_user(username, password):
+    for user in user_list:  # user_list 是一个 Python list
+        if user["username"] == username:
+            if user["password"] == password:
+                return True
+    return False
+```
+
+问题在于：
+
+- 用户数已经增长到 50 万
+- 每次登录都要遍历整个列表找用户名
+- 高峰期每秒有 1000 次登录请求
+- 每次请求平均比较 25 万个用户名
+
+**总比较次数**：1000 × 250,000 = 2.5 亿 次/秒
+
+**一行修复**：
+
+```python
+user_dict = {user["username"]: user for user in user_list}
+
+def verify_user(username, password):
+    user = user_dict.get(username)  # Θ(1) 查找
+    if user and user["password"] == password:
+        return True
+    return False
+```
+
+修复后，登录时间从 5 秒降回 0.5 秒。
+
+---
+
 ## 从查电话开始
 
 如果你有一张通讯录：
@@ -72,6 +117,14 @@ def unique_names(names):
 ```
 
 `name not in result` 会逐个比较。最坏情况下，越到后面，`result` 越长，检查越慢。
+
+### 量化理解
+
+| 输入规模 | list 方式总比较次数 | set 方式总查找次数 |
+|----------|---------------------|-------------------|
+| 1,000 | ~500,000 (Θ(n²)) | ~1,000 (Θ(n)) |
+| 10,000 | ~50,000,000 | ~10,000 |
+| 100,000 | ~5,000,000,000 | ~100,000 |
 
 改用集合：
 

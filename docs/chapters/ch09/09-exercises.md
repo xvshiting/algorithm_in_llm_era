@@ -6,6 +6,63 @@
 
 ## 练习设计理念
 
+## 知识卡片：分布式算法核心概念
+
+### 📌 核心概念速查表
+
+| 概念 | 定义 | 关键要点 |
+|------|------|----------|
+| **通信复杂度** | 节点间交换的信息量 | 通信成本往往比计算成本更重要 |
+| **同步轮数** | 通信轮数 | 轮数影响延迟 |
+| **预聚合** | 本地计算后传输小结果 | 指数级减少通信 |
+| **共识问题** | 多节点达成一致 | Paxos、Raft |
+| **一致性模型** | 读写顺序承诺 | 强一致→最终一致 |
+| **分片策略** | 数据分配到节点 | 哈希/范围/一致性哈希 |
+| **热点** | 负载不均的节点 | 分裂/复制/盐化 |
+
+### 📌 设计原则速记
+
+```
+分布式设计四原则：
+1. 数据不动，代码移动 → 减少传输
+2. 预聚合优先 → 本地计算优先
+3. 避免中心瓶颈 → 负载均衡
+4. 容忍异步 → 最终一致性
+```
+
+### 📌 LLM审查清单速查
+
+```
+审查LLM分布式方案时必问：
+□ 通信量是多少？是否可预聚合？
+□ 是否有中心瓶颈？
+□ 节点失败如何处理？
+□ 是否有热点风险？
+□ 一致性级别是否合理？
+```
+
+### 📌 常见错误速查
+
+| LLM常见错误 | 正确方案 |
+|-------------|----------|
+| "传所有数据到中心" | 预聚合后传输 |
+| "用精确哈希表存储" | 用摘要结构 |
+| "忽略热点风险" | 监控热点，设计处理机制 |
+| "忽略容错" | 设计重试、幂等机制 |
+
+### 📌 分布式 vs 单机对比
+
+| 维度 | 单机 | 分布式 |
+|------|------|--------|
+| 成本关注 | 计算时间 | 通信量、同步轮数 |
+| 数据存储 | 内存 | 分片到多节点 |
+| 容错 | 无需考虑 | 节点失败必须处理 |
+| 一致性 | 天然一致 | 需要共识机制 |
+| 热点 | 无 | 需要负载均衡 |
+
+---
+
+
 本章练习采用三层结构：
 - **层次一：基础理解** - 掌握核心概念
 - **层次二：方案设计** - 综合应用知识
@@ -564,6 +621,291 @@ class HotspotDetectionAgent:
 ---
 
 ### 13. 分布式算法实现
+
+### 7. 审查LLM分布式方案（参考答案要点）
+
+**审查框架应用示例**：
+
+```
+假设LLM给出方案：
+"设计分布式日志分析系统：
+  1. 收集所有日志到中心服务器
+  2. 在中心服务器分析
+  3. 生成报告"
+
+审查分析：
+
+1. 通信成本：
+   - [ ] 是否有中心瓶颈？ ✗ 有中心服务器
+   - [ ] 数据传输量分析？ ✗ 未分析传输量
+   - [ ] Shuffle成本分析？ ✗ 无Shuffle设计
+   - [ ] 是否有优化方案？ ✗ 无预聚合
+
+   估算：假设日志10TB → 传输10TB到中心 → 不可行
+
+2. 容错机制：
+   - [ ] 节点失败如何处理？ ✗ 未提及
+   - [ ] 是否有重试机制？ ✗ 无
+   - [ ] 是否有幂等设计？ ✗ 无
+
+3. 热点风险：
+   - [ ] 是否有热点识别？ ✗ 无
+   - [ ] 是否有热点处理？ ✗ 无
+   - [ ] 负载是否均匀？ ✗ 中心节点过载
+
+4. 一致性选择：
+   - [ ] 一致性级别是否合理？ - 分析场景不需要强一致
+   - [ ] 是否有并发控制？ ✗ 无
+   - [ ] 是否有冲突处理？ ✗ 无
+
+改进建议：
+1. 使用MapReduce架构替代中心处理
+2. 添加节点失败重试机制
+3. 使用Combiner减少Shuffle传输
+4. 监控热点并动态扩容
+
+改进后方案：
+  - Map阶段：每台服务器本地分析日志
+  - Shuffle：按分析维度分组
+  - Reduce：汇总分析结果
+  - 容错：节点失败自动重试
+```
+
+---
+
+### 8. 对比最佳实践（参考答案要点）
+
+**对比分析框架**：
+
+```
+LLM解释 vs 论文原文对比维度：
+
+1. 核心概念准确性：
+   | 概念 | LLM解释 | 论文原文 | 差异 |
+   |------|---------|---------|------|
+   | Map | "处理数据" | "应用函数到输入" | 精确度不足 |
+   | Shuffle | "传输数据" | "按key分组传输" | 缺少分组概念 |
+   | Reduce | "汇总结果" | "合并相同key的值" | 精确度不足 |
+
+2. 完整性评估：
+   | 方面 | LLM覆盖 | 论文覆盖 | 遗漏 |
+   |------|---------|---------|------|
+   | 容错机制 | 基本提及 | 详细描述 | 重试、备份任务 |
+   | 数据本地化 | 未提及 | 强调 | 关键优化 |
+   | Combiner优化 | 未提及 | 详细 | 重要优化 |
+
+3. LLM常见误解：
+   - 认为MapReduce是"批处理系统"（忽略了实时流处理应用）
+   - 忽略数据本地化的重要性
+   - 未强调Shuffle是瓶颈
+
+4. 改进建议：
+   - 阅读原文补充遗漏概念
+   - 理解优化策略（Combiner、数据本地化）
+   - 关注工程实践细节
+```
+
+---
+
+### 9. 人机协作设计要点（参考答案要点）
+
+**人机协作设计指南**：
+
+```
+LLM在分布式设计中的优势：
+1. 快速生成方案框架
+2. 解释概念原理
+3. 提供多角度思路
+4. 生成代码示例
+
+LLM在分布式设计中的局限：
+1. 忽略系统约束（内存、网络、延迟）
+2. 缺少成本分析习惯
+3. 不考虑边界情况
+4. 方案"功能正确但不可用"
+
+人类审查的关键点：
+1. 通信成本：数据传输量是否合理？
+2. 容错机制：节点失败如何处理？
+3. 热点风险：是否存在负载不均？
+4. 一致性选择：级别是否合理？
+
+高效人机协作流程：
+1. LLM生成方案 → 快速获得框架
+2. 人类审查约束 → 用审查清单检查
+3. 人类提出改进 → 补充遗漏分析
+4. LLM细化方案 → 生成改进后代码
+5. 人类验证 → 测试关键场景
+
+核心原则：LLM生成，人类审查
+```
+
+---
+
+### 10. 设计分布式审查Agent（参考答案要点）
+
+**Agent完整实现示例**：
+
+```python
+class DistributedReviewAgent:
+    """分布式方案审查Agent"""
+    
+    def __init__(self):
+        self.review_checklist = {
+            "communication": [
+                "是否有中心瓶颈？",
+                "数据传输量分析？",
+                "Shuffle成本分析？",
+                "是否有优化方案？"
+            ],
+            "fault_tolerance": [
+                "节点失败如何处理？",
+                "是否有重试机制？",
+                "是否有幂等设计？"
+            ],
+            "hotspot": [
+                "是否有热点识别？",
+                "是否有热点处理？",
+                "负载是否均匀？"
+            ],
+            "consistency": [
+                "一致性级别是否合理？",
+                "是否有并发控制？",
+                "是否有冲突处理？"
+            ]
+        }
+    
+    def review(self, design_description):
+        """审查分布式方案"""
+        report = {
+            "communication": self._check_communication(design_description),
+            "fault_tolerance": self._check_fault_tolerance(design_description),
+            "hotspot": self._check_hotspot(design_description),
+            "consistency": self._check_consistency(design_description),
+            "overall_score": 0,
+            "recommendations": []
+        }
+        
+        # 计算总分
+        total_checks = sum(len(v) for v in self.review_checklist.values())
+        passed_checks = sum(r["passed"] for r in report.values())
+        report["overall_score"] = passed_checks / total_checks
+        
+        # 生成建议
+        for category, result in report.items():
+            if result["passed"] < len(self.review_checklist[category]):
+                report["recommendations"].append(
+                    f"改进{category}: {result['missing']}"
+                )
+        
+        return report
+    
+    def _check_communication(self, design):
+        """检查通信成本"""
+        checks = self.review_checklist["communication"]
+        passed = 0
+        missing = []
+        
+        # 检查关键词
+        keywords = {
+            "中心瓶颈": ["分布式", "无中心", "P2P"],
+            "传输量": ["传输", "通信", "带宽"],
+            "Shuffle": ["shuffle", "分组", "预聚合"],
+            "优化": ["优化", "Combiner", "压缩"]
+        }
+        
+        for check in checks:
+            for key, words in keywords.items():
+                if any(w in design for w in words):
+                    passed += 1
+                    break
+            else:
+                missing.append(check)
+        
+        return {"passed": passed, "missing": missing}
+    
+    def _check_fault_tolerance(self, design):
+        """检查容错机制"""
+        # 类似实现...
+        return {"passed": 0, "missing": self.review_checklist["fault_tolerance"]}
+    
+    def _check_hotspot(self, design):
+        """检查热点风险"""
+        # 类似实现...
+        return {"passed": 0, "missing": self.review_checklist["hotspot"]}
+    
+    def _check_consistency(self, design):
+        """检查一致性选择"""
+        # 类似实现...
+        return {"passed": 0, "missing": self.review_checklist["consistency"]}
+```
+
+---
+
+### 11. 设计热点检测Agent（参考答案要点）
+
+**Agent实现要点**：
+
+```python
+class HotspotDetectionAgent:
+    """热点检测Agent"""
+    
+    def __init__(self, threshold=3.0):
+        self.threshold = threshold
+        self.history = []
+    
+    def monitor(self, metrics):
+        """监控系统指标"""
+        hotspots = []
+        
+        # 计算统计量
+        rates = [m["request_rate"] for m in metrics]
+        avg = sum(rates) / len(rates)
+        std = (sum((r - avg)**2 for r in rates) / len(rates))**0.5
+        
+        # 检测热点
+        for m in metrics:
+            z_score = (m["request_rate"] - avg) / std
+            if z_score > self.threshold:
+                hotspots.append({
+                    "shard": m["shard_id"],
+                    "rate": m["request_rate"],
+                    "severity": z_score,
+                    "action": self._decide_action(z_score)
+                })
+        
+        return hotspots
+    
+    def _decide_action(self, severity):
+        """决策处理动作"""
+        if severity > 5.0:
+            return "split"  # 分裂到多副本
+        elif severity > 3.0:
+            return "replicate"  # 增加读副本
+        else:
+            return "monitor"  # 继续监控
+    
+    def handle(self, hotspots):
+        """执行处理动作"""
+        actions = []
+        for h in hotspots:
+            if h["action"] == "split":
+                actions.append({
+                    "type": "split",
+                    "shard": h["shard"],
+                    "replicas": 3
+                })
+            elif h["action"] == "replicate":
+                actions.append({
+                    "type": "replicate",
+                    "shard": h["shard"],
+                    "replicas": 2
+                })
+        return actions
+```
+
+---
+
 
 **场景**：实现分布式PageRank算法。
 

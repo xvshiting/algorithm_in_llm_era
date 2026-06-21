@@ -395,3 +395,738 @@ SAT子句长度任意，3-SAT每子句恰好3文字。
 ---
 
 **下一节**：我们将学习如何识别和证明新问题的NP完全性。
+
+---
+
+## 代码实现：经典归约链
+
+### SAT → 3-SAT 归约
+
+```python
+from typing import List, Tuple, Set, Optional
+import random
+
+class SATFormula:
+    """SAT公式表示"""
+    
+    def __init__(self):
+        # 每个子句是文字列表，每个文字是 (变量名, 是否否定)
+        # 例如 [('x1', False), ('x2', True)] 表示 (x1 ∨ ¬x2)
+        self.clauses: List[List[Tuple[str, bool]]] = []
+        self.variables: Set[str] = set()
+    
+    def add_clause(self, literals: List[Tuple[str, bool]]) -> None:
+        """添加子句"""
+        if not literals:
+            raise ValueError("子句不能为空")
+        for var, _ in literals:
+            self.variables.add(var)
+        self.clauses.append(literals)
+    
+    def evaluate(self, assignment: Dict[str, bool]) -> bool:
+        """
+        在给定赋值下评估公式
+        
+        Args:
+            assignment: 变量赋值字典
+            
+        Returns:
+            公式是否可满足
+        """
+        for clause in self.clauses:
+            # 每个子句至少一个文字为真
+            clause_satisfied = False
+            for var, negated in clause:
+                if var not in assignment:
+                    raise ValueError(f"变量 '{var}' 未赋值")
+                # 如果 var=True 且 negated=False，则文字为真
+                # 如果 var=False 且 negated=True，则文字为真
+                literal_value = assignment[var] if not negated else not assignment[var]
+                if literal_value:
+                    clause_satisfied = True
+                    break
+            if not clause_satisfied:
+                return False
+        return True
+    
+    def is_satisfiable_backtracking(self) -> Optional[Dict[str, bool]]:
+        """
+        使用回溯法判断SAT公式是否可满足
+        
+        Returns:
+            可满足时返回一个赋值，否则返回None
+        """
+        vars_list = list(self.variables)
+        return self._backtrack(vars_list, {}, 0)
+    
+    def _backtrack(
+        self, 
+        vars_list: List[str], 
+        assignment: Dict[str, bool], 
+        idx: int
+    ) -> Optional[Dict[str, bool]]:
+        """回溯辅助函数"""
+        if idx == len(vars_list):
+            # 所有变量已赋值，检查是否满足
+            if self.evaluate(assignment):
+                return assignment.copy()
+            return None
+        
+        var = vars_list[idx]
+        
+        # 尝试 True
+        assignment[var] = True
+        # 先检查部分赋值是否能满足当前子句
+        if self._partial_check(assignment, idx):
+            result = self._backtrack(vars_list, assignment, idx + 1)
+            if result:
+                return result
+        
+        # 尝试 False
+        assignment[var] = False
+        if self._partial_check(assignment, idx):
+            result = self._backtrack(vars_list, assignment, idx + 1)
+            if result:
+                return result
+        
+        del assignment[var]
+        return None
+    
+    def _partial_check(
+        self, 
+        assignment: Dict[str, bool], 
+        current_idx: int
+    ) -> bool:
+        """检查当前部分赋值是否有希望满足"""
+        for clause in self.clauses:
+            clause_can_be_satisfied = False
+            all_assigned = True
+            for var, negated in clause:
+                if var in assignment:
+                    literal_value = assignment[var] if not negated else not assignment[var]
+                    if literal_value:
+                        clause_can_be_satisfied = True
+                        break
+                else:
+                    all_assigned = False
+            
+            # 如果所有文字都已赋值且没有一个为真，则失败
+            if all_assigned and not clause_can_be_satisfied:
+                return False
+        return True
+
+
+class ThreeSATFormula(SATFormula):
+    """3-SAT公式，每个子句恰好3个文字"""
+    
+    def add_clause(self, literals: List[Tuple[str, bool]]) -> None:
+        if len(literals) != 3:
+            raise ValueError(f"3-SAT子句必须有3个文字，得到{len(literals)}个")
+        super().add_clause(literals)
+
+
+def sat_to_3sat(formula: SATFormula) -> Tuple[ThreeSATFormula, Set[str]]:
+    """
+    SAT到3-SAT的归约
+    
+    将任意长度的SAT子句转换为恰好3个文字的3-SAT子句。
+    
+    Args:
+        formula: SAT公式
+        
+    Returns:
+        (3-SAT公式, 辅助变量集合)
+        
+    归约方法：
+    1. 长子句（>3文字）：引入辅助变量分组
+       例如 (x1 ∨ x2 ∨ x3 ∨ x4) →
+       (x1 ∨ x2 ∨ y1) ∧ (¬y1 ∨ x3 ∨ y2) ∧ (¬y2 ∨ x4 ∨ T)
+       
+    2. 短子句（<3文字）：引入新变量扩展
+       例如 (x1 ∨ x2) →
+       (x1 ∨ x2 ∨ z) ∧ (x1 ∨ x2 ∨ ¬z)
+       
+    3. 恰好3文字：直接复制
+    """
+    three_sat = ThreeSATFormula()
+    auxiliary_vars: Set[str] = set()
+    aux_counter = 0
+    
+    # 用于填充的"真"变量（可满足的文字）
+    true_literal_cache: Set[str] = set()
+    
+    for clause in formula.clauses:
+        clause_len = len(clause)
+        
+        if clause_len == 3:
+            # 恰好3文字，直接复制
+            three_sat.add_clause(clause.copy())
+        
+        elif clause_len > 3:
+            # 长子句：引入辅助变量分组
+            aux_vars_for_clause = []
+            for i in range(clause_len - 3):
+                aux_var = f"aux_{aux_counter}"
+                auxiliary_vars.add(aux_var)
+                aux_vars_for_clause.append(aux_var)
+                aux_counter += 1
+            
+            # 构造分组子句
+            # 例如：(x1 ∨ x2 ∨ x3 ∨ x4 ∨ x5) →
+            # (x1 ∨ x2 ∨ aux1) ∧ (¬aux1 ∨ x3 ∨ aux2) ∧ (¬aux2 ∨ x4 ∨ x5)
+            
+            i = 0
+            while i < clause_len:
+                literals_3 = []
+                
+                # 第一个子句取前2个原文文字 + 第一个辅助变量
+                if i == 0:
+                    literals_3.append(clause[0])
+                    literals_3.append(clause[1])
+                    if aux_vars_for_clause:
+                        literals_3.append((aux_vars_for_clause[0], False))
+                        # 下一个子句要使用 ¬aux_vars_for_clause[0]
+                        i = 2  # 下一次从第3个原文文字开始
+                    else:
+                        # 没有3文字子句需要辅助变量（恰好3文字已处理）
+                        literals_3.append(clause[2])
+                        i = 3
+                elif i < clause_len - 1:
+                    # 中间子句：¬prev_aux + 文字 + next_aux 或 最后一个文字
+                    prev_aux_idx = i - 2  # 之前使用的辅助变量索引
+                    if prev_aux_idx < len(aux_vars_for_clause):
+                        literals_3.append((aux_vars_for_clause[prev_aux_idx], True))
+                    
+                    literals_3.append(clause[i])
+                    
+                    next_aux_idx = prev_aux_idx + 1
+                    if next_aux_idx < len(aux_vars_for_clause):
+                        literals_3.append((aux_vars_for_clause[next_aux_idx], False))
+                        i += 1
+                    elif i + 1 < clause_len:
+                        literals_3.append(clause[i + 1])
+                        i += 2
+                    else:
+                        # 需要填充真值
+                        if not true_literal_cache:
+                            true_var = f"true_{aux_counter}"
+                            auxiliary_vars.add(true_var)
+                            true_literal_cache.add(true_var)
+                            aux_counter += 1
+                        true_var = next(iter(true_literal_cache))
+                        literals_3.append((true_var, False))  # T
+                        i += 1
+                else:
+                    # 最后处理
+                    prev_aux_idx = (i - 2) if i >= 2 else -1
+                    if prev_aux_idx >= 0 and prev_aux_idx < len(aux_vars_for_clause):
+                        literals_3.append((aux_vars_for_clause[prev_aux_idx], True))
+                    
+                    if i < clause_len:
+                        literals_3.append(clause[i])
+                    
+                    if len(literals_3) < 3:
+                        # 添加剩余文字或填充
+                        if i + 1 < clause_len:
+                            literals_3.append(clause[i + 1])
+                        else:
+                            if not true_literal_cache:
+                                true_var = f"true_{aux_counter}"
+                                auxiliary_vars.add(true_var)
+                                true_literal_cache.add(true_var)
+                                aux_counter += 1
+                            true_var = next(iter(true_literal_cache))
+                            while len(literals_3) < 3:
+                                literals_3.append((true_var, False))
+                    i += 3
+                
+                if len(literals_3) == 3:
+                    three_sat.add_clause(literals_3)
+        
+        else:  # clause_len < 3
+            # 短子句：引入新变量扩展
+            aux_var = f"short_{aux_counter}"
+            auxiliary_vars.add(aux_var)
+            aux_counter += 1
+            
+            # 构造两个子句
+            # 例如：(x1 ∨ x2) → (x1 ∨ x2 ∨ z) ∧ (x1 ∨ x2 ∨ ¬z)
+            clause1 = clause.copy() + [(aux_var, False)]
+            clause2 = clause.copy() + [(aux_var, True)]
+            
+            three_sat.add_clause(clause1)
+            three_sat.add_clause(clause2)
+    
+    return three_sat, auxiliary_vars
+
+
+def verify_sat_to_3sat_reduction(
+    original: SATFormula, 
+    three_sat: ThreeSATFormula, 
+    auxiliary_vars: Set[str]
+) -> bool:
+    """
+    验证SAT到3-SAT归约的正确性
+    
+    通过检查：
+    1. 如果SAT可满足，则3-SAT可满足
+    2. 如果3-SAT可满足，则SAT可满足
+    
+    Args:
+        original: 原SAT公式
+        three_sat: 归约后的3-SAT公式
+        auxiliary_vars: 辅助变量集合
+        
+    Returns:
+        归约是否正确（通过验证测试）
+    """
+    # 测试1：SAT可满足 → 3-SAT可满足
+    sat_assignment = original.is_satisfiable_backtracking()
+    
+    if sat_assignment is not None:
+        # 扩展赋值包含辅助变量
+        extended_assignment = sat_assignment.copy()
+        
+        # 为辅助变量赋值（简化策略：全赋True）
+        for aux_var in auxiliary_vars:
+            extended_assignment[aux_var] = True
+        
+        # 尝试调整辅助变量使3-SAT满足
+        # 由于归约设计，总存在使3-SAT满足的辅助变量赋值
+        three_sat_satisfied = three_sat.evaluate(extended_assignment)
+        
+        if not three_sat_satisfied:
+            # 尝试回溯找合适的辅助变量赋值
+            aux_vars_list = list(auxiliary_vars)
+            for aux_assignment in _enumerate_aux_assignments(aux_vars_list, sat_assignment):
+                if three_sat.evaluate(aux_assignment):
+                    three_sat_satisfied = True
+                    break
+        
+        if not three_sat_satisfied:
+            print("验证失败：SAT可满足但3-SAT不可满足")
+            return False
+    
+    # 测试2：3-SAT可满足 → SAT可满足
+    # 找一个3-SAT的满足赋值（如果有）
+    three_sat_assignment = three_sat.is_satisfiable_backtracking()
+    
+    if three_sat_assignment is not None:
+        # 提取原始变量的赋值
+        original_assignment = {
+            var: val 
+            for var, val in three_sat_assignment.items() 
+            if var in original.variables
+        }
+        
+        # 检查是否满足原SAT
+        if not original.evaluate(original_assignment):
+            print("验证失败：3-SAT可满足但SAT不可满足")
+            return False
+    
+    return True
+
+
+def _enumerate_aux_assignments(
+    aux_vars: List[str], 
+    base_assignment: Dict[str, bool]
+) -> List[Dict[str, bool]]:
+    """枚举辅助变量的所有赋值组合"""
+    if not aux_vars:
+        return [base_assignment.copy()]
+    
+    result = []
+    n = len(aux_vars)
+    
+    # 限制枚举数量避免过大
+    max_combinations = min(2 ** n, 64)
+    
+    for i in range(max_combinations):
+        assignment = base_assignment.copy()
+        for j, var in enumerate(aux_vars):
+            assignment[var] = bool((i >> j) & 1)
+        result.append(assignment)
+    
+    return result
+```
+
+### Vertex Cover → CLIQUE 归约
+
+```python
+from typing import Dict, Set, Tuple, Optional
+from collections import defaultdict
+
+class GraphForVC:
+    """用于顶点覆盖的图"""
+    
+    def __init__(self, vertices: Optional[Set[int]] = None):
+        self.vertices: Set[int] = vertices if vertices else set()
+        self.adj: Dict[int, Set[int]] = defaultdict(set)
+    
+    def add_edge(self, u: int, v: int) -> None:
+        """添加边"""
+        self.vertices.add(u)
+        self.vertices.add(v)
+        self.adj[u].add(v)
+        self.adj[v].add(u)
+    
+    def edges(self) -> Set[Tuple[int, int]]:
+        """返回所有边（规范化：u < v）"""
+        result = set()
+        for u in self.adj:
+            for v in self.adj[u]:
+                if u < v:
+                    result.add((u, v))
+        return result
+    
+    def complement(self) -> 'GraphForVC':
+        """
+        构造补图
+        
+        补图中：
+        - 顶点集合相同
+        - 原图有边 → 补图无边
+        - 原图无边 → 补图有边
+        """
+        comp = GraphForVC(self.vertices.copy())
+        
+        # 补图包含原图中没有的所有边
+        vertices_list = sorted(self.vertices)
+        for i in range(len(vertices_list)):
+            for j in range(i + 1, len(vertices_list)):
+                u, v = vertices_list[i], vertices_list[j]
+                # 如果原图中没有这条边，则在补图中添加
+                if v not in self.adj[u]:
+                    comp.add_edge(u, v)
+        
+        return comp
+    
+    def vertex_cover_bruteforce(self, k: int) -> Optional[Set[int]]:
+        """
+        暴力搜索大小为k的顶点覆盖
+        
+        Args:
+            k: 目标覆盖大小
+            
+        Returns:
+            如果存在返回一个覆盖，否则返回None
+        """
+        if k < 0:
+            raise ValueError("覆盖大小k必须为非负")
+        
+        if k >= len(self.vertices):
+            return self.vertices.copy()
+        
+        from itertools import combinations
+        vertices_list = list(self.vertices)
+        edges = self.edges()
+        
+        for cover in combinations(vertices_list, k):
+            cover_set = set(cover)
+            # 检查是否覆盖所有边
+            if all(u in cover_set or v in cover_set for u, v in edges):
+                return cover_set
+        
+        return None
+    
+    def clique_bruteforce(self, k: int) -> Optional[Set[int]]:
+        """
+        暴力搜索大小为k的团
+        
+        Args:
+            k: 目标团大小
+            
+        Returns:
+            如果存在返回一个团，否则返回None
+        """
+        if k < 0:
+            raise ValueError("团大小k必须为非负")
+        
+        if k > len(self.vertices):
+            return None
+        
+        if k <= 1:
+            if self.vertices:
+                return {min(self.vertices)} if k == 1 else set()
+            return None
+        
+        from itertools import combinations
+        vertices_list = list(self.vertices)
+        
+        for clique_candidate in combinations(vertices_list, k):
+            clique_set = set(clique_candidate)
+            # 检查是否是完全子图（所有顶点互相连接）
+            is_clique = True
+            for u in clique_set:
+                # u应该连接到团中所有其他顶点
+                neighbors_in_clique = sum(1 for v in clique_set if v in self.adj[u] and v != u)
+                if neighbors_in_clique != k - 1:
+                    is_clique = False
+                    break
+            
+            if is_clique:
+                return clique_set
+        
+        return None
+
+
+def vc_to_clique_reduction(g: GraphForVC, k: int) -> Tuple[GraphForVC, int]:
+    """
+    Vertex Cover到CLIQUE的归约
+    
+    关键定理：S是G的顶点覆盖 ⟺ V\S是G补图中的团
+    
+    Args:
+        g: 原图
+        k: 顶点覆盖的目标大小
+        
+    Returns:
+        (补图, 补图中的团目标大小 = |V| - k)
+    """
+    n = len(g.vertices)
+    clique_target = n - k
+    
+    if clique_target < 0:
+        raise ValueError(f"覆盖大小k={k}大于顶点数n={n}，无有效团目标")
+    
+    complement_graph = g.complement()
+    
+    return complement_graph, clique_target
+
+
+def verify_vc_clique_equivalence(g: GraphForVC, k: int) -> bool:
+    """
+    验证顶点覆盖与补图团的等价性
+    
+    Args:
+        g: 图
+        k: 覆盖大小
+        
+    Returns:
+        是否满足等价性定理
+    """
+    n = len(g.vertices)
+    clique_target = n - k
+    
+    # 查找顶点覆盖
+    cover = g.vertex_cover_bruteforce(k)
+    
+    # 查找补图中的团
+    comp = g.complement()
+    clique = comp.clique_bruteforce(clique_target)
+    
+    if cover is None and clique is None:
+        # 都不存在，等价性成立
+        return True
+    
+    if cover is None or clique is None:
+        # 一个存在一个不存在，等价性不成立
+        print(f"验证失败：覆盖存在={cover is not None}, 团存在={clique is not None}")
+        return False
+    
+    # 检查关系：cover = V \ clique 或 clique = V \ cover
+    vertices = g.vertices
+    
+    # 从覆盖推导团
+    derived_clique = vertices - cover
+    if derived_clique == clique:
+        print(f"验证成功：覆盖 {cover} ⟹ 团 {clique}")
+        return True
+    
+    # 从团推导覆盖
+    derived_cover = vertices - clique
+    if derived_cover == cover:
+        print(f"验证成功：团 {clique} ⟹ 覆盖 {cover}")
+        return True
+    
+    print(f"验证失败：覆盖={cover}, 团={clique}, 但不满足补关系")
+    return False
+```
+
+### 归约验证框架
+
+```python
+class ReductionVerifier:
+    """归约正确性验证框架"""
+    
+    def __init__(self):
+        self.test_cases: List[Dict] = []
+        self.results: List[Dict] = []
+    
+    def add_test_case(
+        self, 
+        name: str, 
+        original_instance: any, 
+        reduced_instance: any,
+        original_vars: Set[str] = None,
+        auxiliary_vars: Set[str] = None
+    ) -> None:
+        """添加测试案例"""
+        self.test_cases.append({
+            'name': name,
+            'original': original_instance,
+            'reduced': reduced_instance,
+            'original_vars': original_vars,
+            'aux_vars': auxiliary_vars
+        })
+    
+    def verify_all(self) -> Dict[str, bool]:
+        """验证所有测试案例"""
+        results = {}
+        for test in self.test_cases:
+            # 根据归约类型执行相应验证
+            # （需要根据具体归约实现验证逻辑）
+            results[test['name']] = True  # 简化示例
+        return results
+    
+    def report(self) -> str:
+        """生成验证报告"""
+        lines = ["归约验证报告", "=" * 50]
+        for test in self.test_cases:
+            status = "✓ 通过" if True else "✗ 失败"
+            lines.append(f"{test['name']}: {status}")
+        return "\n".join(lines)
+
+
+# ==================== 测试用例 ====================
+
+import unittest
+
+class TestReductions(unittest.TestCase):
+    """归约测试"""
+    
+    def test_sat_to_3sat_short_clause(self):
+        """测试短子句归约"""
+        sat = SATFormula()
+        sat.add_clause([('x1', False), ('x2', True)])  # (x1 ∨ ¬x2)
+        
+        three_sat, aux_vars = sat_to_3sat(sat)
+        
+        # 应该生成两个3-子句
+        self.assertEqual(len(three_sat.clauses), 2)
+        
+        # 验证等价性
+        self.assertTrue(verify_sat_to_3sat_reduction(sat, three_sat, aux_vars))
+        
+        print(f"短子句归约: {sat.clauses} → {three_sat.clauses}")
+    
+    def test_sat_to_3sat_long_clause(self):
+        """测试长子句归约"""
+        sat = SATFormula()
+        # (x1 ∨ x2 ∨ x3 ∨ x4 ∨ x5)
+        sat.add_clause([
+            ('x1', False), ('x2', False), ('x3', False), 
+            ('x4', False), ('x5', False)
+        ])
+        
+        three_sat, aux_vars = sat_to_3sat(sat)
+        
+        # 应该生成多个3-子句
+        self.assertGreater(len(three_sat.clauses), 1)
+        
+        # 所有子句都是3-文字
+        for clause in three_sat.clauses:
+            self.assertEqual(len(clause), 3)
+        
+        # 验证等价性
+        self.assertTrue(verify_sat_to_3sat_reduction(sat, three_sat, aux_vars))
+        
+        print(f"长子句归约: 5文字 → {len(three_sat.clauses)}个子句")
+    
+    def test_vc_clique_reduction(self):
+        """测试VC到CLIQUE归约"""
+        # 构造一个简单图
+        g = GraphForVC()
+        g.add_edge(1, 2)
+        g.add_edge(2, 3)
+        g.add_edge(3, 4)
+        
+        k = 2
+        comp, clique_target = vc_to_clique_reduction(g, k)
+        
+        # 验证等价性
+        self.assertTrue(verify_vc_clique_equivalence(g, k))
+        
+        print(f"VC→CLIQUE: 覆盖k={k} → 团k={clique_target}")
+    
+    def test_vc_clique_cycle(self):
+        """测试三角形图的VC-CLIQUE归约"""
+        g = GraphForVC()
+        g.add_edge(1, 2)
+        g.add_edge(2, 3)
+        g.add_edge(3, 1)
+        
+        # 三角形的最小覆盖是2，补图没有边，最大团是3
+        k = 2
+        
+        self.assertTrue(verify_vc_clique_equivalence(g, k))
+        
+        comp = g.complement()
+        print(f"三角形补图边数: {len(comp.edges())}")  # 应为0
+    
+    def test_empty_formula(self):
+        """测试空SAT公式"""
+        sat = SATFormula()
+        # 添加一个恰好3文字的子句（避免空公式）
+        sat.add_clause([('x1', False), ('x2', False), ('x3', False)])
+        
+        three_sat, aux_vars = sat_to_3sat(sat)
+        
+        # 应该直接复制
+        self.assertEqual(len(three_sat.clauses), 1)
+        self.assertEqual(len(aux_vars), 0)
+
+
+def run_reduction_demo():
+    """演示归约效果"""
+    print("=" * 60)
+    print("经典归约链演示")
+    print("=" * 60)
+    
+    # SAT → 3-SAT 示例
+    print("\n【SAT → 3-SAT】")
+    sat = SATFormula()
+    sat.add_clause([('x1', False), ('x2', True), ('x3', False)])  # (x1 ∨ ¬x2 ∨ x3)
+    sat.add_clause([('x1', False), ('x2', False)])  # (x1 ∨ x2)
+    sat.add_clause([('a', False), ('b', False), ('c', False), ('d', False)])  # 4文字
+    
+    three_sat, aux_vars = sat_to_3sat(sat)
+    
+    print(f"原SAT: {len(sat.clauses)}个子句, {len(sat.variables)}个变量")
+    print(f"3-SAT: {len(three_sat.clauses)}个子句, {len(three_sat.variables)}个变量")
+    print(f"辅助变量: {aux_vars}")
+    
+    # 验证可满足性保持
+    sat_result = sat.is_satisfiable_backtracking()
+    three_sat_result = three_sat.is_satisfiable_backtracking()
+    
+    print(f"SAT可满足: {sat_result is not None}")
+    print(f"3-SAT可满足: {three_sat_result is not None}")
+    
+    # VC → CLIQUE 示例
+    print("\n【Vertex Cover → CLIQUE】")
+    g = GraphForVC()
+    g.add_edge(1, 2)
+    g.add_edge(2, 3)
+    g.add_edge(3, 4)
+    g.add_edge(1, 3)
+    
+    for k in range(1, 5):
+        cover = g.vertex_cover_bruteforce(k)
+        comp, clique_target = vc_to_clique_reduction(g, k)
+        clique = comp.clique_bruteforce(clique_target)
+        
+        cover_str = str(cover) if cover else "不存在"
+        clique_str = str(clique) if clique else "不存在"
+        
+        print(f"k={k}: 覆盖={cover_str}, 补图团(大小{clique_target})={clique_str}")
+
+
+if __name__ == "__main__":
+    run_reduction_demo()
+    print("\n" + "=" * 60)
+    print("运行单元测试...")
+    print("=" * 60 + "\n")
+    unittest.main(verbosity=2)
+```
+

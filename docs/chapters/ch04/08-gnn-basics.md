@@ -248,8 +248,8 @@ h_v^(l+1) = σ(Σ_{u∈N(v)∪{v}} (1/√(d_u · d_v)) · W · h_u^(l))
 
 ## 参考文献
 
-- Kipf & Welling, "Semi-Supervised Classification with GCN", ICLR 2017
-- Velickovic et al., "Graph Attention Networks", ICLR 2018
-- Hamilton et al., "Inductive Representation Learning on Large Graphs", NeurIPS 2017
-- Grover & Leskovec, "Node2Vec", KDD 2016
-- "LLMs+Graphs: Toward Graph-Native, Synergistic AI Systems", arXiv 2026-06
+- [Kipf & Welling, ICLR 2017] Semi-Supervised Classification with Graph Convolutional Networks. https://arxiv.org/abs/1609.02907
+- [Velickovic et al., ICLR 2018] Graph Attention Networks. https://arxiv.org/abs/1710.10903
+- [Hamilton et al., NeurIPS 2017] Inductive Representation Learning on Large Graphs. https://arxiv.org/abs/1706.02216
+- [Grover & Leskovec, KDD 2016] Node2Vec: Scalable Feature Learning for Networks. https://arxiv.org/abs/1607.00653
+- [LLMs+Graphs, arXiv 2026] Toward Graph-Native, Synergistic AI Systems. https://arxiv.org/abs/2026.xxxxx

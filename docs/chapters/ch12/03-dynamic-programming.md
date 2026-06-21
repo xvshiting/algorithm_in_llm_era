@@ -468,6 +468,8 @@ def longest_simple_path_wrong(graph, start, end):
 
 **实例**：背包问题——状态 `dp[i][w]` 表示前i个物品容量w的最大价值。
 
+**LLM时代关联**：LLM中的自注意力缓存：KV-cache本质是DP的表格，避免重复计算历史token的表示。
+
 ### C12-18 DP正确性证明
 
 **直觉解释**：证明"每一步都算对了，最后结果必然对"。
@@ -485,6 +487,8 @@ def longest_simple_path_wrong(graph, start, end):
 - ✅ 正确理解：DP正确性依赖最优子结构
 
 **实例**：LCS——证明 `LCS(i,j) = LCS(i-1,j-1)+1` 或 `max(LCS(i-1,j), LCS(i,j-1))`。
+
+**LLM时代关联**：LLM推理优化验证：通过缓存命中率和生成质量验证优化正确性。
 
 ### C12-19 DP空间优化
 
@@ -506,6 +510,8 @@ def longest_simple_path_wrong(graph, start, end):
 
 **实例**：01背包从 `dp[n][W]` 优化到 `dp[W]`，注意内层循环逆序。
 
+**LLM时代关联**：LLM内存优化：KV-cache的滑动窗口、压缩策略减少内存占用。
+
 ### C12-20 DP时间优化
 
 **直觉解释**：减少"无效计算"，提高"有效转移效率"。
@@ -525,6 +531,8 @@ def longest_simple_path_wrong(graph, start, end):
 - ✅ 正确理解：先优化状态数，再优化转移成本
 
 **实例**：单调队列优化滑动窗口最值。
+
+**LLM时代关联**：LLM推理加速：投机解码、并行解码等优化利用DP缓存加速生成。
 
 ### C12-21 DP vs 分治
 
@@ -546,6 +554,8 @@ def longest_simple_path_wrong(graph, start, end):
 
 **实例**：斐波那契——分治O(2^n)；DP缓存O(n)。
 
+**LLM时代关联**：LLM训练的梯度累积：批处理优化避免重复计算梯度。
+
 ### C12-22 DP vs 贪心
 
 **直觉解释**：DP"看全局"，贪心"只看眼前"。
@@ -566,6 +576,8 @@ def longest_simple_path_wrong(graph, start, end):
 
 **实例**：背包问题——DP保证最优；贪心可能非最优。
 
+**LLM时代关联**：LLM生成策略：贪心解码简单但不保证最优，需要更复杂的搜索策略。
+
 ### C12-23 DP失败案例
 
 **直觉解释**：DP不是万能的，有些问题不适合DP。
@@ -584,6 +596,8 @@ def longest_simple_path_wrong(graph, start, end):
 - ✅ 正确理解：DP适用有严格条件
 
 **实例**：最长简单路径——状态需要记录路径信息，状态爆炸。
+
+**LLM时代关联**：LLM长上下文失败：简单缓存所有历史导致OOM，需要淘汰策略。
 
 ### C12-24 DP直觉建立
 

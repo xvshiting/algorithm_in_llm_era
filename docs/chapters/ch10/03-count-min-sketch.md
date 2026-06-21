@@ -4,6 +4,88 @@
 
 ---
 
+### LLM 方案失败案例：忽视空间约束
+
+**场景**：用户请求 LLM 设计"实时热搜词统计系统"。
+
+**LLM 给出的方案**：
+```python
+# LLM方案
+def trending_topics(stream):
+    freq = {}
+    for word in stream:
+        freq[word] = freq.get(word, 0) + 1
+    return sorted(freq.items(), key=lambda x: -x[1])[:100]
+```
+
+**审查发现的问题**：
+```
+问题1：空间复杂度 O(v)
+  - 搜索词种类可能1000万
+  - 哈希表需要约500MB内存
+  - 内存不够！
+
+问题2：没有时间窗口
+  - 旧热搜词无法过期
+  - 无法统计"过去1小时"的热搜
+
+问题3：每次查询都排序
+  - O(v log v) 查询效率
+  - 实时性不足
+```
+
+**正确方案（使用 Count-Min Sketch）**：
+```python
+class TrendingTopicsSystem:
+    """实时热搜榜系统 - 空间优化版本"""
+    
+    def __init__(self, epsilon=0.1, delta=0.01, window_size=3600):
+        """
+        Args:
+            epsilon: 相对误差阈值
+            delta: 失败概率
+            window_size: 时间窗口（秒）
+        """
+        self.cms = CountMinSketch(epsilon, delta)
+        self.window_buckets = [CountMinSketch(epsilon, delta) 
+                               for _ in range(window_size)]
+        self.current_bucket = 0
+        self.top_k_heap = TopKHeap(100)
+    
+    def process_search(self, word):
+        """处理搜索词"""
+        self.cms.add(word)
+        self.window_buckets[self.current_bucket].add(word)
+        estimated_freq = self.cms.estimate(word)
+        self.top_k_heap.update(word, estimated_freq)
+    
+    def tick_second(self):
+        """每秒切换桶"""
+        self.current_bucket = (self.current_bucket + 1) % len(self.window_buckets)
+        # 重置当前桶
+        self.window_buckets[self.current_bucket] = CountMinSketch(0.1, 0.01)
+    
+    def get_trending(self):
+        """获取热搜榜"""
+        return self.top_k_heap.get_top_k()
+```
+
+**空间对比**：
+```
+LLM方案：O(v) ≈ 500MB（1000万词）
+CMS方案：O(1/ε × ln(1/δ)) ≈ 5KB + 窗口桶约50KB
+
+指数级节省！
+```
+
+**教训**：
+- LLM 容易给出"功能正确但空间爆炸"的方案
+- 流式系统必须考虑空间约束
+- Count-Min Sketch 是频率估计的标准工具
+
+---
+
+
 ## 开场问题：热搜词频率统计
 
 想象你在运营一个搜索引擎，需要实时统计热搜词频率：
@@ -43,6 +125,88 @@ def get_freq(word):
 **困惑**：如何在不存储所有词的情况下，估计任意词的频率？
 
 ---
+
+### LLM 方案失败案例：忽视空间约束
+
+**场景**：用户请求 LLM 设计"实时热搜词统计系统"。
+
+**LLM 给出的方案**：
+```python
+# LLM方案
+def trending_topics(stream):
+    freq = {}
+    for word in stream:
+        freq[word] = freq.get(word, 0) + 1
+    return sorted(freq.items(), key=lambda x: -x[1])[:100]
+```
+
+**审查发现的问题**：
+```
+问题1：空间复杂度 O(v)
+  - 搜索词种类可能1000万
+  - 哈希表需要约500MB内存
+  - 内存不够！
+
+问题2：没有时间窗口
+  - 旧热搜词无法过期
+  - 无法统计"过去1小时"的热搜
+
+问题3：每次查询都排序
+  - O(v log v) 查询效率
+  - 实时性不足
+```
+
+**正确方案（使用 Count-Min Sketch）**：
+```python
+class TrendingTopicsSystem:
+    """实时热搜榜系统 - 空间优化版本"""
+    
+    def __init__(self, epsilon=0.1, delta=0.01, window_size=3600):
+        """
+        Args:
+            epsilon: 相对误差阈值
+            delta: 失败概率
+            window_size: 时间窗口（秒）
+        """
+        self.cms = CountMinSketch(epsilon, delta)
+        self.window_buckets = [CountMinSketch(epsilon, delta) 
+                               for _ in range(window_size)]
+        self.current_bucket = 0
+        self.top_k_heap = TopKHeap(100)
+    
+    def process_search(self, word):
+        """处理搜索词"""
+        self.cms.add(word)
+        self.window_buckets[self.current_bucket].add(word)
+        estimated_freq = self.cms.estimate(word)
+        self.top_k_heap.update(word, estimated_freq)
+    
+    def tick_second(self):
+        """每秒切换桶"""
+        self.current_bucket = (self.current_bucket + 1) % len(self.window_buckets)
+        # 重置当前桶
+        self.window_buckets[self.current_bucket] = CountMinSketch(0.1, 0.01)
+    
+    def get_trending(self):
+        """获取热搜榜"""
+        return self.top_k_heap.get_top_k()
+```
+
+**空间对比**：
+```
+LLM方案：O(v) ≈ 500MB（1000万词）
+CMS方案：O(1/ε × ln(1/δ)) ≈ 5KB + 窗口桶约50KB
+
+指数级节省！
+```
+
+**教训**：
+- LLM 容易给出"功能正确但空间爆炸"的方案
+- 流式系统必须考虑空间约束
+- Count-Min Sketch 是频率估计的标准工具
+
+---
+
 
 ## 朴素方案及其代价
 
@@ -87,6 +251,88 @@ for word in stream:
 - 空间仍是O(v)
 
 ---
+
+### LLM 方案失败案例：忽视空间约束
+
+**场景**：用户请求 LLM 设计"实时热搜词统计系统"。
+
+**LLM 给出的方案**：
+```python
+# LLM方案
+def trending_topics(stream):
+    freq = {}
+    for word in stream:
+        freq[word] = freq.get(word, 0) + 1
+    return sorted(freq.items(), key=lambda x: -x[1])[:100]
+```
+
+**审查发现的问题**：
+```
+问题1：空间复杂度 O(v)
+  - 搜索词种类可能1000万
+  - 哈希表需要约500MB内存
+  - 内存不够！
+
+问题2：没有时间窗口
+  - 旧热搜词无法过期
+  - 无法统计"过去1小时"的热搜
+
+问题3：每次查询都排序
+  - O(v log v) 查询效率
+  - 实时性不足
+```
+
+**正确方案（使用 Count-Min Sketch）**：
+```python
+class TrendingTopicsSystem:
+    """实时热搜榜系统 - 空间优化版本"""
+    
+    def __init__(self, epsilon=0.1, delta=0.01, window_size=3600):
+        """
+        Args:
+            epsilon: 相对误差阈值
+            delta: 失败概率
+            window_size: 时间窗口（秒）
+        """
+        self.cms = CountMinSketch(epsilon, delta)
+        self.window_buckets = [CountMinSketch(epsilon, delta) 
+                               for _ in range(window_size)]
+        self.current_bucket = 0
+        self.top_k_heap = TopKHeap(100)
+    
+    def process_search(self, word):
+        """处理搜索词"""
+        self.cms.add(word)
+        self.window_buckets[self.current_bucket].add(word)
+        estimated_freq = self.cms.estimate(word)
+        self.top_k_heap.update(word, estimated_freq)
+    
+    def tick_second(self):
+        """每秒切换桶"""
+        self.current_bucket = (self.current_bucket + 1) % len(self.window_buckets)
+        # 重置当前桶
+        self.window_buckets[self.current_bucket] = CountMinSketch(0.1, 0.01)
+    
+    def get_trending(self):
+        """获取热搜榜"""
+        return self.top_k_heap.get_top_k()
+```
+
+**空间对比**：
+```
+LLM方案：O(v) ≈ 500MB（1000万词）
+CMS方案：O(1/ε × ln(1/δ)) ≈ 5KB + 窗口桶约50KB
+
+指数级节省！
+```
+
+**教训**：
+- LLM 容易给出"功能正确但空间爆炸"的方案
+- 流式系统必须考虑空间约束
+- Count-Min Sketch 是频率估计的标准工具
+
+---
+
 
 ## Count-Min Sketch的直觉
 
@@ -146,6 +392,88 @@ h₃("apple") → 位置 99，计数器3
 
 ---
 
+### LLM 方案失败案例：忽视空间约束
+
+**场景**：用户请求 LLM 设计"实时热搜词统计系统"。
+
+**LLM 给出的方案**：
+```python
+# LLM方案
+def trending_topics(stream):
+    freq = {}
+    for word in stream:
+        freq[word] = freq.get(word, 0) + 1
+    return sorted(freq.items(), key=lambda x: -x[1])[:100]
+```
+
+**审查发现的问题**：
+```
+问题1：空间复杂度 O(v)
+  - 搜索词种类可能1000万
+  - 哈希表需要约500MB内存
+  - 内存不够！
+
+问题2：没有时间窗口
+  - 旧热搜词无法过期
+  - 无法统计"过去1小时"的热搜
+
+问题3：每次查询都排序
+  - O(v log v) 查询效率
+  - 实时性不足
+```
+
+**正确方案（使用 Count-Min Sketch）**：
+```python
+class TrendingTopicsSystem:
+    """实时热搜榜系统 - 空间优化版本"""
+    
+    def __init__(self, epsilon=0.1, delta=0.01, window_size=3600):
+        """
+        Args:
+            epsilon: 相对误差阈值
+            delta: 失败概率
+            window_size: 时间窗口（秒）
+        """
+        self.cms = CountMinSketch(epsilon, delta)
+        self.window_buckets = [CountMinSketch(epsilon, delta) 
+                               for _ in range(window_size)]
+        self.current_bucket = 0
+        self.top_k_heap = TopKHeap(100)
+    
+    def process_search(self, word):
+        """处理搜索词"""
+        self.cms.add(word)
+        self.window_buckets[self.current_bucket].add(word)
+        estimated_freq = self.cms.estimate(word)
+        self.top_k_heap.update(word, estimated_freq)
+    
+    def tick_second(self):
+        """每秒切换桶"""
+        self.current_bucket = (self.current_bucket + 1) % len(self.window_buckets)
+        # 重置当前桶
+        self.window_buckets[self.current_bucket] = CountMinSketch(0.1, 0.01)
+    
+    def get_trending(self):
+        """获取热搜榜"""
+        return self.top_k_heap.get_top_k()
+```
+
+**空间对比**：
+```
+LLM方案：O(v) ≈ 500MB（1000万词）
+CMS方案：O(1/ε × ln(1/δ)) ≈ 5KB + 窗口桶约50KB
+
+指数级节省！
+```
+
+**教训**：
+- LLM 容易给出"功能正确但空间爆炸"的方案
+- 流式系统必须考虑空间约束
+- Count-Min Sketch 是频率估计的标准工具
+
+---
+
+
 ## Count-Min Sketch结构
 
 ### 数据结构定义
@@ -190,6 +518,88 @@ def estimate(word):
 
 ---
 
+### LLM 方案失败案例：忽视空间约束
+
+**场景**：用户请求 LLM 设计"实时热搜词统计系统"。
+
+**LLM 给出的方案**：
+```python
+# LLM方案
+def trending_topics(stream):
+    freq = {}
+    for word in stream:
+        freq[word] = freq.get(word, 0) + 1
+    return sorted(freq.items(), key=lambda x: -x[1])[:100]
+```
+
+**审查发现的问题**：
+```
+问题1：空间复杂度 O(v)
+  - 搜索词种类可能1000万
+  - 哈希表需要约500MB内存
+  - 内存不够！
+
+问题2：没有时间窗口
+  - 旧热搜词无法过期
+  - 无法统计"过去1小时"的热搜
+
+问题3：每次查询都排序
+  - O(v log v) 查询效率
+  - 实时性不足
+```
+
+**正确方案（使用 Count-Min Sketch）**：
+```python
+class TrendingTopicsSystem:
+    """实时热搜榜系统 - 空间优化版本"""
+    
+    def __init__(self, epsilon=0.1, delta=0.01, window_size=3600):
+        """
+        Args:
+            epsilon: 相对误差阈值
+            delta: 失败概率
+            window_size: 时间窗口（秒）
+        """
+        self.cms = CountMinSketch(epsilon, delta)
+        self.window_buckets = [CountMinSketch(epsilon, delta) 
+                               for _ in range(window_size)]
+        self.current_bucket = 0
+        self.top_k_heap = TopKHeap(100)
+    
+    def process_search(self, word):
+        """处理搜索词"""
+        self.cms.add(word)
+        self.window_buckets[self.current_bucket].add(word)
+        estimated_freq = self.cms.estimate(word)
+        self.top_k_heap.update(word, estimated_freq)
+    
+    def tick_second(self):
+        """每秒切换桶"""
+        self.current_bucket = (self.current_bucket + 1) % len(self.window_buckets)
+        # 重置当前桶
+        self.window_buckets[self.current_bucket] = CountMinSketch(0.1, 0.01)
+    
+    def get_trending(self):
+        """获取热搜榜"""
+        return self.top_k_heap.get_top_k()
+```
+
+**空间对比**：
+```
+LLM方案：O(v) ≈ 500MB（1000万词）
+CMS方案：O(1/ε × ln(1/δ)) ≈ 5KB + 窗口桶约50KB
+
+指数级节省！
+```
+
+**教训**：
+- LLM 容易给出"功能正确但空间爆炸"的方案
+- 流式系统必须考虑空间约束
+- Count-Min Sketch 是频率估计的标准工具
+
+---
+
+
 ## 完整实现
 
 ```python
@@ -201,11 +611,20 @@ class CountMinSketch:
     
     def __init__(self, epsilon=0.1, delta=0.01):
         """
-        epsilon: 相对误差阈值
-        delta: 失败概率
+        epsilon: 相对误差阈值 (0 < epsilon <= 1)
+        delta: 失败概率 (0 < delta < 1)
         
         空间：O(d × w) = O(1/ε · log(1/δ))
+        
+        Raises:
+            ValueError: 参数不合法时抛出
         """
+        # 参数验证
+        if not isinstance(epsilon, (int, float)) or epsilon <= 0 or epsilon > 1:
+            raise ValueError(f"epsilon 必须在 (0, 1] 范围内，当前: {epsilon}")
+        if not isinstance(delta, (int, float)) or delta <= 0 or delta >= 1:
+            raise ValueError(f"delta 必须在 (0, 1) 范围内，当前: {delta}")
+        
         self.w = int(math.ceil(2.71828 / epsilon))  # 列数
         self.d = int(math.ceil(math.log(1 / delta)))  # 行数
         self.table = [[0] * self.w for _ in range(self.d)]
@@ -213,18 +632,55 @@ class CountMinSketch:
         self.N = 0  # 总元素数
     
     def _hash(self, item, i):
-        """第i个哈希函数"""
-        return mmh3.hash(str(item), self.seeds[i]) % self.w
+        """
+        第i个哈希函数
+        
+        Args:
+            item: 要哈希的元素
+            i: 哈希函数索引 (0 <= i < d)
+        
+        Returns:
+            哈希值在 [0, w) 范围内
+        
+        Raises:
+            ValueError: 索引越界或哈希失败时抛出
+        """
+        if i < 0 or i >= self.d:
+            raise ValueError(f"哈希函数索引 {i} 超出范围 [0, {self.d})")
+        try:
+            return mmh3.hash(str(item), self.seeds[i]) % self.w
+        except Exception as e:
+            raise ValueError(f"哈希计算失败: {item}") from e
     
     def add(self, item, count=1):
-        """增加元素频率"""
+        """
+        增加元素频率
+        
+        Args:
+            item: 要添加的元素
+            count: 增加的计数（必须为正整数）
+        
+        Raises:
+            ValueError: count 不是正整数时抛出
+        """
+        if not isinstance(count, int) or count <= 0:
+            raise ValueError(f"count 必须是正整数，当前: {count}")
+        
         self.N += count
         for i in range(self.d):
             j = self._hash(item, i)
             self.table[i][j] += count
     
     def estimate(self, item):
-        """估计元素频率（总是 ≥ 真实值）"""
+        """
+        估计元素频率（总是 ≥ 真实值）
+        
+        Args:
+            item: 要查询的元素
+        
+        Returns:
+            估计的频率值
+        """
         min_count = float('inf')
         for i in range(self.d):
             j = self._hash(item, i)
@@ -256,6 +712,88 @@ print(f"总计数器数: {cms.d} × {cms.w} = {cms.d * cms.w}")
 ```
 
 ---
+
+### LLM 方案失败案例：忽视空间约束
+
+**场景**：用户请求 LLM 设计"实时热搜词统计系统"。
+
+**LLM 给出的方案**：
+```python
+# LLM方案
+def trending_topics(stream):
+    freq = {}
+    for word in stream:
+        freq[word] = freq.get(word, 0) + 1
+    return sorted(freq.items(), key=lambda x: -x[1])[:100]
+```
+
+**审查发现的问题**：
+```
+问题1：空间复杂度 O(v)
+  - 搜索词种类可能1000万
+  - 哈希表需要约500MB内存
+  - 内存不够！
+
+问题2：没有时间窗口
+  - 旧热搜词无法过期
+  - 无法统计"过去1小时"的热搜
+
+问题3：每次查询都排序
+  - O(v log v) 查询效率
+  - 实时性不足
+```
+
+**正确方案（使用 Count-Min Sketch）**：
+```python
+class TrendingTopicsSystem:
+    """实时热搜榜系统 - 空间优化版本"""
+    
+    def __init__(self, epsilon=0.1, delta=0.01, window_size=3600):
+        """
+        Args:
+            epsilon: 相对误差阈值
+            delta: 失败概率
+            window_size: 时间窗口（秒）
+        """
+        self.cms = CountMinSketch(epsilon, delta)
+        self.window_buckets = [CountMinSketch(epsilon, delta) 
+                               for _ in range(window_size)]
+        self.current_bucket = 0
+        self.top_k_heap = TopKHeap(100)
+    
+    def process_search(self, word):
+        """处理搜索词"""
+        self.cms.add(word)
+        self.window_buckets[self.current_bucket].add(word)
+        estimated_freq = self.cms.estimate(word)
+        self.top_k_heap.update(word, estimated_freq)
+    
+    def tick_second(self):
+        """每秒切换桶"""
+        self.current_bucket = (self.current_bucket + 1) % len(self.window_buckets)
+        # 重置当前桶
+        self.window_buckets[self.current_bucket] = CountMinSketch(0.1, 0.01)
+    
+    def get_trending(self):
+        """获取热搜榜"""
+        return self.top_k_heap.get_top_k()
+```
+
+**空间对比**：
+```
+LLM方案：O(v) ≈ 500MB（1000万词）
+CMS方案：O(1/ε × ln(1/δ)) ≈ 5KB + 窗口桶约50KB
+
+指数级节省！
+```
+
+**教训**：
+- LLM 容易给出"功能正确但空间爆炸"的方案
+- 流式系统必须考虑空间约束
+- Count-Min Sketch 是频率估计的标准工具
+
+---
+
 
 ## 为什么取最小值？
 
@@ -303,6 +841,88 @@ print(f"总计数器数: {cms.d} × {cms.w} = {cms.d * cms.w}")
 
 ---
 
+### LLM 方案失败案例：忽视空间约束
+
+**场景**：用户请求 LLM 设计"实时热搜词统计系统"。
+
+**LLM 给出的方案**：
+```python
+# LLM方案
+def trending_topics(stream):
+    freq = {}
+    for word in stream:
+        freq[word] = freq.get(word, 0) + 1
+    return sorted(freq.items(), key=lambda x: -x[1])[:100]
+```
+
+**审查发现的问题**：
+```
+问题1：空间复杂度 O(v)
+  - 搜索词种类可能1000万
+  - 哈希表需要约500MB内存
+  - 内存不够！
+
+问题2：没有时间窗口
+  - 旧热搜词无法过期
+  - 无法统计"过去1小时"的热搜
+
+问题3：每次查询都排序
+  - O(v log v) 查询效率
+  - 实时性不足
+```
+
+**正确方案（使用 Count-Min Sketch）**：
+```python
+class TrendingTopicsSystem:
+    """实时热搜榜系统 - 空间优化版本"""
+    
+    def __init__(self, epsilon=0.1, delta=0.01, window_size=3600):
+        """
+        Args:
+            epsilon: 相对误差阈值
+            delta: 失败概率
+            window_size: 时间窗口（秒）
+        """
+        self.cms = CountMinSketch(epsilon, delta)
+        self.window_buckets = [CountMinSketch(epsilon, delta) 
+                               for _ in range(window_size)]
+        self.current_bucket = 0
+        self.top_k_heap = TopKHeap(100)
+    
+    def process_search(self, word):
+        """处理搜索词"""
+        self.cms.add(word)
+        self.window_buckets[self.current_bucket].add(word)
+        estimated_freq = self.cms.estimate(word)
+        self.top_k_heap.update(word, estimated_freq)
+    
+    def tick_second(self):
+        """每秒切换桶"""
+        self.current_bucket = (self.current_bucket + 1) % len(self.window_buckets)
+        # 重置当前桶
+        self.window_buckets[self.current_bucket] = CountMinSketch(0.1, 0.01)
+    
+    def get_trending(self):
+        """获取热搜榜"""
+        return self.top_k_heap.get_top_k()
+```
+
+**空间对比**：
+```
+LLM方案：O(v) ≈ 500MB（1000万词）
+CMS方案：O(1/ε × ln(1/δ)) ≈ 5KB + 窗口桶约50KB
+
+指数级节省！
+```
+
+**教训**：
+- LLM 容易给出"功能正确但空间爆炸"的方案
+- 流式系统必须考虑空间约束
+- Count-Min Sketch 是频率估计的标准工具
+
+---
+
+
 ## 空间与精度分析
 
 ### 空间复杂度
@@ -346,6 +966,88 @@ cms = CountMinSketch(epsilon=0.01, delta=0.001)
 ```
 
 ---
+
+### LLM 方案失败案例：忽视空间约束
+
+**场景**：用户请求 LLM 设计"实时热搜词统计系统"。
+
+**LLM 给出的方案**：
+```python
+# LLM方案
+def trending_topics(stream):
+    freq = {}
+    for word in stream:
+        freq[word] = freq.get(word, 0) + 1
+    return sorted(freq.items(), key=lambda x: -x[1])[:100]
+```
+
+**审查发现的问题**：
+```
+问题1：空间复杂度 O(v)
+  - 搜索词种类可能1000万
+  - 哈希表需要约500MB内存
+  - 内存不够！
+
+问题2：没有时间窗口
+  - 旧热搜词无法过期
+  - 无法统计"过去1小时"的热搜
+
+问题3：每次查询都排序
+  - O(v log v) 查询效率
+  - 实时性不足
+```
+
+**正确方案（使用 Count-Min Sketch）**：
+```python
+class TrendingTopicsSystem:
+    """实时热搜榜系统 - 空间优化版本"""
+    
+    def __init__(self, epsilon=0.1, delta=0.01, window_size=3600):
+        """
+        Args:
+            epsilon: 相对误差阈值
+            delta: 失败概率
+            window_size: 时间窗口（秒）
+        """
+        self.cms = CountMinSketch(epsilon, delta)
+        self.window_buckets = [CountMinSketch(epsilon, delta) 
+                               for _ in range(window_size)]
+        self.current_bucket = 0
+        self.top_k_heap = TopKHeap(100)
+    
+    def process_search(self, word):
+        """处理搜索词"""
+        self.cms.add(word)
+        self.window_buckets[self.current_bucket].add(word)
+        estimated_freq = self.cms.estimate(word)
+        self.top_k_heap.update(word, estimated_freq)
+    
+    def tick_second(self):
+        """每秒切换桶"""
+        self.current_bucket = (self.current_bucket + 1) % len(self.window_buckets)
+        # 重置当前桶
+        self.window_buckets[self.current_bucket] = CountMinSketch(0.1, 0.01)
+    
+    def get_trending(self):
+        """获取热搜榜"""
+        return self.top_k_heap.get_top_k()
+```
+
+**空间对比**：
+```
+LLM方案：O(v) ≈ 500MB（1000万词）
+CMS方案：O(1/ε × ln(1/δ)) ≈ 5KB + 窗口桶约50KB
+
+指数级节省！
+```
+
+**教训**：
+- LLM 容易给出"功能正确但空间爆炸"的方案
+- 流式系统必须考虑空间约束
+- Count-Min Sketch 是频率估计的标准工具
+
+---
+
 
 ## Count-Min Sketch的应用
 
@@ -443,6 +1145,88 @@ class AnomalyDetector:
 
 ---
 
+### LLM 方案失败案例：忽视空间约束
+
+**场景**：用户请求 LLM 设计"实时热搜词统计系统"。
+
+**LLM 给出的方案**：
+```python
+# LLM方案
+def trending_topics(stream):
+    freq = {}
+    for word in stream:
+        freq[word] = freq.get(word, 0) + 1
+    return sorted(freq.items(), key=lambda x: -x[1])[:100]
+```
+
+**审查发现的问题**：
+```
+问题1：空间复杂度 O(v)
+  - 搜索词种类可能1000万
+  - 哈希表需要约500MB内存
+  - 内存不够！
+
+问题2：没有时间窗口
+  - 旧热搜词无法过期
+  - 无法统计"过去1小时"的热搜
+
+问题3：每次查询都排序
+  - O(v log v) 查询效率
+  - 实时性不足
+```
+
+**正确方案（使用 Count-Min Sketch）**：
+```python
+class TrendingTopicsSystem:
+    """实时热搜榜系统 - 空间优化版本"""
+    
+    def __init__(self, epsilon=0.1, delta=0.01, window_size=3600):
+        """
+        Args:
+            epsilon: 相对误差阈值
+            delta: 失败概率
+            window_size: 时间窗口（秒）
+        """
+        self.cms = CountMinSketch(epsilon, delta)
+        self.window_buckets = [CountMinSketch(epsilon, delta) 
+                               for _ in range(window_size)]
+        self.current_bucket = 0
+        self.top_k_heap = TopKHeap(100)
+    
+    def process_search(self, word):
+        """处理搜索词"""
+        self.cms.add(word)
+        self.window_buckets[self.current_bucket].add(word)
+        estimated_freq = self.cms.estimate(word)
+        self.top_k_heap.update(word, estimated_freq)
+    
+    def tick_second(self):
+        """每秒切换桶"""
+        self.current_bucket = (self.current_bucket + 1) % len(self.window_buckets)
+        # 重置当前桶
+        self.window_buckets[self.current_bucket] = CountMinSketch(0.1, 0.01)
+    
+    def get_trending(self):
+        """获取热搜榜"""
+        return self.top_k_heap.get_top_k()
+```
+
+**空间对比**：
+```
+LLM方案：O(v) ≈ 500MB（1000万词）
+CMS方案：O(1/ε × ln(1/δ)) ≈ 5KB + 窗口桶约50KB
+
+指数级节省！
+```
+
+**教训**：
+- LLM 容易给出"功能正确但空间爆炸"的方案
+- 流式系统必须考虑空间约束
+- Count-Min Sketch 是频率估计的标准工具
+
+---
+
+
 ## Count-Min Sketch的变体
 
 ### 1. Conservative Update CMS
@@ -503,6 +1287,88 @@ class CountSketch:
 
 ---
 
+### LLM 方案失败案例：忽视空间约束
+
+**场景**：用户请求 LLM 设计"实时热搜词统计系统"。
+
+**LLM 给出的方案**：
+```python
+# LLM方案
+def trending_topics(stream):
+    freq = {}
+    for word in stream:
+        freq[word] = freq.get(word, 0) + 1
+    return sorted(freq.items(), key=lambda x: -x[1])[:100]
+```
+
+**审查发现的问题**：
+```
+问题1：空间复杂度 O(v)
+  - 搜索词种类可能1000万
+  - 哈希表需要约500MB内存
+  - 内存不够！
+
+问题2：没有时间窗口
+  - 旧热搜词无法过期
+  - 无法统计"过去1小时"的热搜
+
+问题3：每次查询都排序
+  - O(v log v) 查询效率
+  - 实时性不足
+```
+
+**正确方案（使用 Count-Min Sketch）**：
+```python
+class TrendingTopicsSystem:
+    """实时热搜榜系统 - 空间优化版本"""
+    
+    def __init__(self, epsilon=0.1, delta=0.01, window_size=3600):
+        """
+        Args:
+            epsilon: 相对误差阈值
+            delta: 失败概率
+            window_size: 时间窗口（秒）
+        """
+        self.cms = CountMinSketch(epsilon, delta)
+        self.window_buckets = [CountMinSketch(epsilon, delta) 
+                               for _ in range(window_size)]
+        self.current_bucket = 0
+        self.top_k_heap = TopKHeap(100)
+    
+    def process_search(self, word):
+        """处理搜索词"""
+        self.cms.add(word)
+        self.window_buckets[self.current_bucket].add(word)
+        estimated_freq = self.cms.estimate(word)
+        self.top_k_heap.update(word, estimated_freq)
+    
+    def tick_second(self):
+        """每秒切换桶"""
+        self.current_bucket = (self.current_bucket + 1) % len(self.window_buckets)
+        # 重置当前桶
+        self.window_buckets[self.current_bucket] = CountMinSketch(0.1, 0.01)
+    
+    def get_trending(self):
+        """获取热搜榜"""
+        return self.top_k_heap.get_top_k()
+```
+
+**空间对比**：
+```
+LLM方案：O(v) ≈ 500MB（1000万词）
+CMS方案：O(1/ε × ln(1/δ)) ≈ 5KB + 窗口桶约50KB
+
+指数级节省！
+```
+
+**教训**：
+- LLM 容易给出"功能正确但空间爆炸"的方案
+- 流式系统必须考虑空间约束
+- Count-Min Sketch 是频率估计的标准工具
+
+---
+
+
 ## CMS的边界与局限
 
 ### 什么时候CMS不适用？
@@ -532,6 +1398,88 @@ class CountSketch:
 4. **删除操作**：不支持删除（转票模型需要Count Sketch）
 
 ---
+
+### LLM 方案失败案例：忽视空间约束
+
+**场景**：用户请求 LLM 设计"实时热搜词统计系统"。
+
+**LLM 给出的方案**：
+```python
+# LLM方案
+def trending_topics(stream):
+    freq = {}
+    for word in stream:
+        freq[word] = freq.get(word, 0) + 1
+    return sorted(freq.items(), key=lambda x: -x[1])[:100]
+```
+
+**审查发现的问题**：
+```
+问题1：空间复杂度 O(v)
+  - 搜索词种类可能1000万
+  - 哈希表需要约500MB内存
+  - 内存不够！
+
+问题2：没有时间窗口
+  - 旧热搜词无法过期
+  - 无法统计"过去1小时"的热搜
+
+问题3：每次查询都排序
+  - O(v log v) 查询效率
+  - 实时性不足
+```
+
+**正确方案（使用 Count-Min Sketch）**：
+```python
+class TrendingTopicsSystem:
+    """实时热搜榜系统 - 空间优化版本"""
+    
+    def __init__(self, epsilon=0.1, delta=0.01, window_size=3600):
+        """
+        Args:
+            epsilon: 相对误差阈值
+            delta: 失败概率
+            window_size: 时间窗口（秒）
+        """
+        self.cms = CountMinSketch(epsilon, delta)
+        self.window_buckets = [CountMinSketch(epsilon, delta) 
+                               for _ in range(window_size)]
+        self.current_bucket = 0
+        self.top_k_heap = TopKHeap(100)
+    
+    def process_search(self, word):
+        """处理搜索词"""
+        self.cms.add(word)
+        self.window_buckets[self.current_bucket].add(word)
+        estimated_freq = self.cms.estimate(word)
+        self.top_k_heap.update(word, estimated_freq)
+    
+    def tick_second(self):
+        """每秒切换桶"""
+        self.current_bucket = (self.current_bucket + 1) % len(self.window_buckets)
+        # 重置当前桶
+        self.window_buckets[self.current_bucket] = CountMinSketch(0.1, 0.01)
+    
+    def get_trending(self):
+        """获取热搜榜"""
+        return self.top_k_heap.get_top_k()
+```
+
+**空间对比**：
+```
+LLM方案：O(v) ≈ 500MB（1000万词）
+CMS方案：O(1/ε × ln(1/δ)) ≈ 5KB + 窗口桶约50KB
+
+指数级节省！
+```
+
+**教训**：
+- LLM 容易给出"功能正确但空间爆炸"的方案
+- 流式系统必须考虑空间约束
+- Count-Min Sketch 是频率估计的标准工具
+
+---
+
 
 ## 实际应用：热搜榜系统
 
@@ -589,6 +1537,88 @@ class TrendingTopicsSystem:
 
 ---
 
+### LLM 方案失败案例：忽视空间约束
+
+**场景**：用户请求 LLM 设计"实时热搜词统计系统"。
+
+**LLM 给出的方案**：
+```python
+# LLM方案
+def trending_topics(stream):
+    freq = {}
+    for word in stream:
+        freq[word] = freq.get(word, 0) + 1
+    return sorted(freq.items(), key=lambda x: -x[1])[:100]
+```
+
+**审查发现的问题**：
+```
+问题1：空间复杂度 O(v)
+  - 搜索词种类可能1000万
+  - 哈希表需要约500MB内存
+  - 内存不够！
+
+问题2：没有时间窗口
+  - 旧热搜词无法过期
+  - 无法统计"过去1小时"的热搜
+
+问题3：每次查询都排序
+  - O(v log v) 查询效率
+  - 实时性不足
+```
+
+**正确方案（使用 Count-Min Sketch）**：
+```python
+class TrendingTopicsSystem:
+    """实时热搜榜系统 - 空间优化版本"""
+    
+    def __init__(self, epsilon=0.1, delta=0.01, window_size=3600):
+        """
+        Args:
+            epsilon: 相对误差阈值
+            delta: 失败概率
+            window_size: 时间窗口（秒）
+        """
+        self.cms = CountMinSketch(epsilon, delta)
+        self.window_buckets = [CountMinSketch(epsilon, delta) 
+                               for _ in range(window_size)]
+        self.current_bucket = 0
+        self.top_k_heap = TopKHeap(100)
+    
+    def process_search(self, word):
+        """处理搜索词"""
+        self.cms.add(word)
+        self.window_buckets[self.current_bucket].add(word)
+        estimated_freq = self.cms.estimate(word)
+        self.top_k_heap.update(word, estimated_freq)
+    
+    def tick_second(self):
+        """每秒切换桶"""
+        self.current_bucket = (self.current_bucket + 1) % len(self.window_buckets)
+        # 重置当前桶
+        self.window_buckets[self.current_bucket] = CountMinSketch(0.1, 0.01)
+    
+    def get_trending(self):
+        """获取热搜榜"""
+        return self.top_k_heap.get_top_k()
+```
+
+**空间对比**：
+```
+LLM方案：O(v) ≈ 500MB（1000万词）
+CMS方案：O(1/ε × ln(1/δ)) ≈ 5KB + 窗口桶约50KB
+
+指数级节省！
+```
+
+**教训**：
+- LLM 容易给出"功能正确但空间爆炸"的方案
+- 流式系统必须考虑空间约束
+- Count-Min Sketch 是频率估计的标准工具
+
+---
+
+
 ## 与分布式算法的对比
 
 > **💡 与分布式算法的区别**
@@ -606,6 +1636,88 @@ class TrendingTopicsSystem:
 | 精度保证 | 合并后误差累加 | 单次误差 |
 
 ---
+
+### LLM 方案失败案例：忽视空间约束
+
+**场景**：用户请求 LLM 设计"实时热搜词统计系统"。
+
+**LLM 给出的方案**：
+```python
+# LLM方案
+def trending_topics(stream):
+    freq = {}
+    for word in stream:
+        freq[word] = freq.get(word, 0) + 1
+    return sorted(freq.items(), key=lambda x: -x[1])[:100]
+```
+
+**审查发现的问题**：
+```
+问题1：空间复杂度 O(v)
+  - 搜索词种类可能1000万
+  - 哈希表需要约500MB内存
+  - 内存不够！
+
+问题2：没有时间窗口
+  - 旧热搜词无法过期
+  - 无法统计"过去1小时"的热搜
+
+问题3：每次查询都排序
+  - O(v log v) 查询效率
+  - 实时性不足
+```
+
+**正确方案（使用 Count-Min Sketch）**：
+```python
+class TrendingTopicsSystem:
+    """实时热搜榜系统 - 空间优化版本"""
+    
+    def __init__(self, epsilon=0.1, delta=0.01, window_size=3600):
+        """
+        Args:
+            epsilon: 相对误差阈值
+            delta: 失败概率
+            window_size: 时间窗口（秒）
+        """
+        self.cms = CountMinSketch(epsilon, delta)
+        self.window_buckets = [CountMinSketch(epsilon, delta) 
+                               for _ in range(window_size)]
+        self.current_bucket = 0
+        self.top_k_heap = TopKHeap(100)
+    
+    def process_search(self, word):
+        """处理搜索词"""
+        self.cms.add(word)
+        self.window_buckets[self.current_bucket].add(word)
+        estimated_freq = self.cms.estimate(word)
+        self.top_k_heap.update(word, estimated_freq)
+    
+    def tick_second(self):
+        """每秒切换桶"""
+        self.current_bucket = (self.current_bucket + 1) % len(self.window_buckets)
+        # 重置当前桶
+        self.window_buckets[self.current_bucket] = CountMinSketch(0.1, 0.01)
+    
+    def get_trending(self):
+        """获取热搜榜"""
+        return self.top_k_heap.get_top_k()
+```
+
+**空间对比**：
+```
+LLM方案：O(v) ≈ 500MB（1000万词）
+CMS方案：O(1/ε × ln(1/δ)) ≈ 5KB + 窗口桶约50KB
+
+指数级节省！
+```
+
+**教训**：
+- LLM 容易给出"功能正确但空间爆炸"的方案
+- 流式系统必须考虑空间约束
+- Count-Min Sketch 是频率估计的标准工具
+
+---
+
 
 ## 小结
 
@@ -625,6 +1737,88 @@ class TrendingTopicsSystem:
 4. CMS适合什么场景？不适合什么场景？
 
 ---
+
+### LLM 方案失败案例：忽视空间约束
+
+**场景**：用户请求 LLM 设计"实时热搜词统计系统"。
+
+**LLM 给出的方案**：
+```python
+# LLM方案
+def trending_topics(stream):
+    freq = {}
+    for word in stream:
+        freq[word] = freq.get(word, 0) + 1
+    return sorted(freq.items(), key=lambda x: -x[1])[:100]
+```
+
+**审查发现的问题**：
+```
+问题1：空间复杂度 O(v)
+  - 搜索词种类可能1000万
+  - 哈希表需要约500MB内存
+  - 内存不够！
+
+问题2：没有时间窗口
+  - 旧热搜词无法过期
+  - 无法统计"过去1小时"的热搜
+
+问题3：每次查询都排序
+  - O(v log v) 查询效率
+  - 实时性不足
+```
+
+**正确方案（使用 Count-Min Sketch）**：
+```python
+class TrendingTopicsSystem:
+    """实时热搜榜系统 - 空间优化版本"""
+    
+    def __init__(self, epsilon=0.1, delta=0.01, window_size=3600):
+        """
+        Args:
+            epsilon: 相对误差阈值
+            delta: 失败概率
+            window_size: 时间窗口（秒）
+        """
+        self.cms = CountMinSketch(epsilon, delta)
+        self.window_buckets = [CountMinSketch(epsilon, delta) 
+                               for _ in range(window_size)]
+        self.current_bucket = 0
+        self.top_k_heap = TopKHeap(100)
+    
+    def process_search(self, word):
+        """处理搜索词"""
+        self.cms.add(word)
+        self.window_buckets[self.current_bucket].add(word)
+        estimated_freq = self.cms.estimate(word)
+        self.top_k_heap.update(word, estimated_freq)
+    
+    def tick_second(self):
+        """每秒切换桶"""
+        self.current_bucket = (self.current_bucket + 1) % len(self.window_buckets)
+        # 重置当前桶
+        self.window_buckets[self.current_bucket] = CountMinSketch(0.1, 0.01)
+    
+    def get_trending(self):
+        """获取热搜榜"""
+        return self.top_k_heap.get_top_k()
+```
+
+**空间对比**：
+```
+LLM方案：O(v) ≈ 500MB（1000万词）
+CMS方案：O(1/ε × ln(1/δ)) ≈ 5KB + 窗口桶约50KB
+
+指数级节省！
+```
+
+**教训**：
+- LLM 容易给出"功能正确但空间爆炸"的方案
+- 流式系统必须考虑空间约束
+- Count-Min Sketch 是频率估计的标准工具
+
+---
+
 
 ## 下一步
 

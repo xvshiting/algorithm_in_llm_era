@@ -55,6 +55,10 @@
 import heapq
 
 def dijkstra(graph, n, start):
+    # 边界检查：验证起点有效性
+    if start < 0 or start >= n:
+        raise ValueError(f"起点 {start} 不存在，有效范围: [0, {n-1}]")
+    
     dist = [float('inf')] * n
     dist[start] = 0
     pq = [(0, start)]
@@ -65,11 +69,19 @@ def dijkstra(graph, n, start):
         if visited[u]:
             continue
         visited[u] = True
+        
+        # 边界情况处理：
+        # 1. 如果 u 无邻居或 graph.neighbors(u) 返回空列表，for 循环自动跳过
+        # 2. 不可达的顶点保持 dist[v] = float('inf')
+        # 3. 如果整个图无可达顶点（孤立起点），返回的 dist 只有 dist[start] = 0
         for v, w in graph.neighbors(u):
             if dist[u] + w < dist[v]:
                 dist[v] = dist[u] + w
                 heapq.heappush(pq, (dist[v], v))
     
+    # 返回值说明：
+    # - dist[v] = float('inf') 表示从 start 不可达 v
+    # - 可通过 sum(d == float('inf') for d in dist) 统计不可达顶点数
     return dist
 ```
 

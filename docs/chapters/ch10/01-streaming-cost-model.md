@@ -9,6 +9,7 @@
 想象你刚写完一个完美的热搜榜统计程序：
 
 ```python
+# 安全版本见下方
 def trending_topics(articles):
     """统计热搜词Top100 - O(n)时间，O(v)空间"""
     freq = {}
@@ -25,6 +26,7 @@ def trending_topics(articles):
 ### 静态方案
 
 ```python
+# 安全版本见下方
 # 收集1小时数据
 hour_data = []
 for search in stream:
@@ -192,6 +194,60 @@ $$P[|\hat{f} - f| \le \epsilon f] \ge 1 - \delta$$
 
 ### 不同类型的近似保证
 
+### 安全版本：添加异常处理
+
+```python
+def trending_topics_safe(articles):
+    """
+    统计热搜词Top100 - 安全版本
+    
+    Args:
+        articles: 文章列表或迭代器
+    
+    Returns:
+        排序后的(top_words, frequencies)列表
+    
+    Raises:
+        TypeError: articles 不是可迭代对象
+        ValueError: 文章内容为空或非字符串
+    """
+    if not hasattr(articles, '__iter__'):
+        raise TypeError("articles 必须是可迭代对象")
+    
+    freq = {}
+    for article in articles:
+        if article is None:
+            continue  # 跳过空文章
+        if not isinstance(article, str):
+            raise ValueError(f"文章必须是字符串，当前类型: {type(article)}")
+        
+        try:
+            words = article.split()
+            for word in words:
+                freq[word] = freq.get(word, 0) + 1
+        except Exception as e:
+            # 记录错误但继续处理
+            print(f"处理文章时出错: {e}")
+            continue
+    
+    if not freq:
+        return []  # 无词汇则返回空列表
+    
+    return sorted(freq.items(), key=lambda x: -x[1])[:100]
+
+
+# 使用示例
+try:
+    result = trending_topics_safe(article_stream)
+    for word, count in result:
+        print(f"{word}: {count}")
+except (TypeError, ValueError) as e:
+    print(f"输入错误: {e}")
+```
+
+---
+
+
 | 保证类型 | 定义 | 适用场景 |
 |----------|------|----------|
 | **(ε, δ)-近似** | P[误差 ≤ ε] ≥ 1-δ | 概率性保证（最常用） |
@@ -265,6 +321,7 @@ $$P[|\hat{f} - f| \le \epsilon f] \ge 1 - \delta$$
 ### 静态方案的问题
 
 ```python
+# 安全版本见下方
 # 问题1：空间爆炸
 freq = {}  # 1000万种词 → 500MB
 
@@ -278,6 +335,7 @@ freq = {}  # 1000万种词 → 500MB
 ### 流式方案
 
 ```python
+# 安全版本见下方
 # 用Count-Min Sketch替代精确哈希表
 cms = CountMinSketch(epsilon=0.1, delta=0.01)  # 约140个计数器
 

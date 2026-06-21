@@ -168,11 +168,18 @@ class HyperLogLog:
     
     def __init__(self, precision=14):
         """
-        precision: 分桶数 = 2^precision
+        precision: 分桶数 = 2^precision (4 <= precision <= 16)
         标准误差 ≈ 1.04 / sqrt(2^precision)
         
         precision=14 → 16384桶，误差≈0.81%
+        
+        Raises:
+            ValueError: precision 不合法时抛出
         """
+        # 参数验证
+        if not isinstance(precision, int) or precision < 4 or precision > 16:
+            raise ValueError(f"precision 必须是 [4, 16] 范围内的整数，当前: {precision}")
+        
         self.b = precision
         self.m = 2 ** precision
         self.registers = [0] * self.m  # 每个寄存器存最大前导零
@@ -186,18 +193,49 @@ class HyperLogLog:
         return 0.7213 / (1 + 1.079 / self.m)
     
     def _hash(self, item):
-        """64位哈希"""
-        h = hashlib.md5(str(item).encode()).hexdigest()
-        return int(h[:16], 16) & 0xFFFFFFFFFFFFFFFF
+        """
+        64位哈希
+        
+        Args:
+            item: 要哈希的元素
+        
+        Returns:
+            64位哈希值
+        
+        Raises:
+            ValueError: 哈希计算失败时抛出
+        """
+        try:
+            h = hashlib.md5(str(item).encode('utf-8')).hexdigest()
+            return int(h[:16], 16) & 0xFFFFFFFFFFFFFFFF
+        except Exception as e:
+            raise ValueError(f"哈希计算失败: {item}") from e
     
     def _count_leading_zeros(self, bits, max_bits):
-        """计算前导零个数（从1开始计数）"""
+        """
+        计算前导零个数（从1开始计数）
+        
+        Args:
+            bits: 要计算的位串
+            max_bits: 最大位数
+        
+        Returns:
+            前导零个数（从1开始计数）
+        """
         if bits == 0:
             return max_bits + 1
         return max_bits - bits.bit_length() + 1
     
     def add(self, item):
-        """添加元素"""
+        """
+        添加元素
+        
+        Args:
+            item: 要添加的元素（可以是任意可转换为字符串的对象）
+        
+        Raises:
+            ValueError: 元素无法哈希时抛出
+        """
         h = self._hash(item)  # 64位哈希
         
         # 前b位决定寄存器索引
@@ -211,7 +249,12 @@ class HyperLogLog:
         self.registers[index] = max(self.registers[index], zeros)
     
     def count(self):
-        """估计基数"""
+        """
+        估计基数
+        
+        Returns:
+            估计的独立元素数量
+        """
         # 调和平均
         harmonic = self.m / sum(2 ** (-r) for r in self.registers)
         
@@ -231,7 +274,20 @@ class HyperLogLog:
         return int(estimate)
     
     def merge(self, other):
-        """合并两个HLL（相同参数）"""
+        """
+        合并两个HLL（相同参数）
+        
+        Args:
+            other: 另一个 HyperLogLog 实例
+        
+        Raises:
+            ValueError: other 不是同类型或参数不匹配时抛出
+        """
+        if not isinstance(other, HyperLogLog):
+            raise ValueError(f"merge 参数必须是 HyperLogLog 实例，当前: {type(other)}")
+        if self.b != other.b:
+            raise ValueError(f"precision 不匹配: self.b={self.b}, other.b={other.b}")
+        
         for i in range(self.m):
             self.registers[i] = max(self.registers[i], other.registers[i])
 ```

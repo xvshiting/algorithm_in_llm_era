@@ -399,6 +399,158 @@ LLM方案："设计社交网络分片"
 
 ## 练习
 
+## 分片策略代码示例
+
+### 哈希分片实现
+
+```python
+class HashSharding:
+    """哈希分片策略"""
+    
+    def __init__(self, num_shards):
+        self.num_shards = num_shards
+    
+    def get_shard(self, key):
+        """计算key所属的shard"""
+        return hash(key) % self.num_shards
+    
+    def put(self, key, value, shards):
+        """写入数据"""
+        shard_id = self.get_shard(key)
+        shards[shard_id][key] = value
+    
+    def get(self, key, shards):
+        """读取数据"""
+        shard_id = self.get_shard(key)
+        return shards[shard_id].get(key)
+```
+
+### 一致性哈希实现
+
+```python
+import hashlib
+
+class ConsistentHashing:
+    """一致性哈希分片策略"""
+    
+    def __init__(self, nodes, virtual_nodes=100):
+        self.ring = {}  # hash值 → node
+        self.virtual_nodes = virtual_nodes
+        
+        # 将每个节点映射到环上的多个虚拟节点
+        for node in nodes:
+            for i in range(virtual_nodes):
+                key = f"{node}:{i}"
+                hash_val = self._hash(key)
+                self.ring[hash_val] = node
+    
+    def _hash(self, key):
+        """计算hash值"""
+        return int(hashlib.md5(key.encode()).hexdigest(), 16)
+    
+    def get_node(self, key):
+        """找到key所属的节点"""
+        hash_val = self._hash(key)
+        
+        # 在环上顺时针找到第一个节点
+        sorted_hashes = sorted(self.ring.keys())
+        for h in sorted_hashes:
+            if h >= hash_val:
+                return self.ring[h]
+        
+        # 环形，回到第一个节点
+        return self.ring[sorted_hashes[0]]
+    
+    def add_node(self, node):
+        """添加新节点"""
+        for i in range(self.virtual_nodes):
+            key = f"{node}:{i}"
+            hash_val = self._hash(key)
+            self.ring[hash_val] = node
+    
+    def remove_node(self, node):
+        """移除节点"""
+        to_remove = []
+        for h, n in self.ring.items():
+            if n == node:
+                to_remove.append(h)
+        for h in to_remove:
+            del self.ring[h]
+```
+
+### 热点检测与处理
+
+```python
+class HotspotDetector:
+    """热点检测器"""
+    
+    def __init__(self, threshold=3.0):
+        self.threshold = threshold  # 标准差倍数阈值
+        self.access_counts = {}  # shard → 访问计数
+    
+    def record_access(self, shard_id):
+        """记录访问"""
+        self.access_counts[shard_id] = self.access_counts.get(shard_id, 0) + 1
+    
+    def detect_hotspots(self):
+        """检测热点"""
+        if len(self.access_counts) < 2:
+            return []
+        
+        counts = list(self.access_counts.values())
+        avg = sum(counts) / len(counts)
+        std = (sum((c - avg)**2 for c in counts) / len(counts))**0.5
+        
+        hotspots = []
+        for shard, count in self.access_counts.items():
+            if count > avg + self.threshold * std:
+                severity = (count - avg) / std
+                hotspots.append({
+                    "shard": shard,
+                    "count": count,
+                    "severity": severity
+                })
+        
+        return hotspots
+
+
+class HotspotHandler:
+    """热点处理器"""
+    
+    def __init__(self, shards):
+        self.shards = shards
+        self.hotspot_replicas = {}  # hotspot_key → [replica_shards]
+    
+    def handle_hotspot(self, hotspot_key, severity):
+        """处理热点"""
+        if severity > 5.0:
+            # 高严重性：分裂到多个副本
+            num_replicas = 3
+            replicas = []
+            for i in range(num_replicas):
+                replica_shard = f"{hotspot_key}_replica_{i}"
+                replicas.append(replica_shard)
+            self.hotspot_replicas[hotspot_key] = replicas
+            return "split"
+        elif severity > 3.0:
+            # 中严重性：增加读副本
+            return "replicate"
+        else:
+            return "monitor"
+    
+    def get_replica(self, hotspot_key):
+        """获取热点数据的副本"""
+        replicas = self.hotspot_replicas.get(hotspot_key, [])
+        if replicas:
+            # 负载均衡：随机选择一个副本
+            import random
+            return random.choice(replicas)
+        return hotspot_key  # 无副本，返回原shard
+```
+
+---
+
+
 ### 1. 选择分片策略
 
 场景：日志数据，按时间查询频繁。

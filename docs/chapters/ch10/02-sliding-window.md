@@ -314,52 +314,121 @@ def count_ones():
 
 ```python
 class DGIM:
-    """DGIM滑动窗口1计数，空间O(log²W)"""
+    """
+    DGIM滑动窗口1计数，空间O(log²W)
+    
+    注意：此为示意代码，展示DGIM算法核心思想。
+    生产环境建议使用经过充分测试的实现。
+    """
     def __init__(self, window_size):
+        """
+        Args:
+            window_size: 窗口大小（正整数）
+        
+        Raises:
+            ValueError: window_size 不合法时抛出
+        """
+        if not isinstance(window_size, int) or window_size <= 0:
+            raise ValueError(f"window_size 必须是正整数，当前: {window_size}")
+        
         self.W = window_size
-        self.buckets = []  # [(end_time, size)]
+        self.buckets = []  # [(end_time, size)] 按时间从旧到新排序
         self.time = 0
     
     def process(self, bit):
+        """
+        处理一个位
+        
+        Args:
+            bit: 0 或 1
+        
+        Raises:
+            ValueError: bit 不是 0 或 1 时抛出
+        """
+        if bit not in (0, 1):
+            raise ValueError(f"bit 必须是 0 或 1，当前: {bit}")
+        
         self.time += 1
         
-        # 移除过期桶
+        # 移除过期桶（窗口外的桶）
         self.buckets = [(t, s) for t, s in self.buckets 
                         if t > self.time - self.W]
         
         if bit == 1:
-            # 创建新桶
+            # 创建新桶（大小为1，结束时间为当前时间）
             self.buckets.append((self.time, 1))
-            # 合同大小的桶
+            # 合并同大小的桶
             self._merge_buckets()
     
     def _merge_buckets(self):
-        """保持每个大小的桶最多2个"""
-        # 按大小分组，合并超过2个的
-        sizes = {}
-        new_buckets = []
-        for t, s in sorted(self.buckets, key=lambda x: -x[0]):
-            if s not in sizes:
-                sizes[s] = 0
-            sizes[s] += 1
-            if sizes[s] <= 2:
-                new_buckets.append((t, s))
-            else:
-                # 合并最小的两个
-                new_buckets.pop()
-                new_buckets.pop()
-                new_buckets.append((t, s * 2))
-                sizes[s * 2] = sizes.get(s * 2, 0) + 1
-        self.buckets = new_buckets
+        """
+        保持每个大小的桶最多2个
+        从最新的桶开始检查，同大小的桶超过2个时合并
+        
+        合并规则：将同大小的两个最旧桶合并为一个大桶
+        """
+        changed = True
+        while changed:
+            changed = False
+            # 按大小分组计数
+            size_count = {}
+            for t, s in self.buckets:
+                size_count[s] = size_count.get(s, 0) + 1
+            
+            # 找到需要合并的大小
+            for size in sorted(size_count.keys()):
+                if size_count[size] > 2:
+                    # 找到该大小的前两个桶（最旧的）
+                    indices_to_merge = []
+                    for i, (t, s) in enumerate(self.buckets):
+                        if s == size:
+                            indices_to_merge.append(i)
+                            if len(indices_to_merge) == 2:
+                                break
+                    
+                    if len(indices_to_merge) == 2:
+                        # 合并：移除两个旧桶，添加一个新的大桶
+                        t1, _ = self.buckets[indices_to_merge[0]]
+                        t2, _ = self.buckets[indices_to_merge[1]]
+                        # 新桶的结束时间取较新的那个
+                        new_time = max(t1, t2)
+                        new_size = size * 2
+                        
+                        # 从后往前移除以保持索引正确
+                        for idx in sorted(indices_to_merge, reverse=True):
+                            self.buckets.pop(idx)
+                        
+                        # 插入合并后的桶（保持时间顺序）
+                        inserted = False
+                        for i, (t, s) in enumerate(self.buckets):
+                            if t > new_time:
+                                self.buckets.insert(i, (new_time, new_size))
+                                inserted = True
+                                break
+                        if not inserted:
+                            self.buckets.append((new_time, new_size))
+                        
+                        changed = True
+                        break  # 重新开始检查
     
     def count(self):
-        """估计窗口内的1的个数"""
+        """
+        估计窗口内的1的个数
+        
+        Returns:
+            窗口内1的估计数量
+        
+        Note:
+            误差最多为最后一个桶大小的一半
+        """
         if not self.buckets:
             return 0
-        # 加上所有桶的大小，最后一个桶只算一半
+        
+        # 加上所有桶的大小，最后一个桶只算一半（可能部分过期）
         total = sum(s for _, s in self.buckets[:-1])
         last_t, last_s = self.buckets[-1]
-        total += last_s // 2  # 近似
+        total += last_s // 2  # 近似处理最后一个桶
+        
         return total
 ```
 

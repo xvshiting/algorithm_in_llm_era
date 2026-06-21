@@ -349,6 +349,235 @@ Raft方案：
 
 ## 练习
 
+## Paxos 实现示例
+
+### Python伪代码实现
+
+```python
+class PaxosNode:
+    """Paxos节点实现（简化版）"""
+    
+    def __init__(self, node_id, acceptors):
+        self.node_id = node_id
+        self.acceptors = acceptors
+        self.proposal_number = 0
+        self.promised_number = 0
+        self.accepted_value = None
+        self.accepted_number = 0
+    
+    def propose(self, value):
+        """提议者：发起提案"""
+        self.proposal_number += 1
+        n = (self.proposal_number, self.node_id)
+        
+        # 阶段1：Prepare
+        promises = []
+        for acceptor in self.acceptors:
+            promise = acceptor.prepare(n)
+            if promise:
+                promises.append(promise)
+        
+        # 检查是否获得多数承诺
+        if len(promises) < len(self.acceptors) // 2 + 1:
+            return None  # 未获得多数，重试
+        
+        # 阶段2：Accept
+        # 如果收到已接受的值，提议该值（尊重之前决定）
+        proposed_value = value
+        for promise in promises:
+            if promise.accepted_value:
+                proposed_value = promise.accepted_value
+        
+        # 发送Accept请求
+        accepted = []
+        for acceptor in self.acceptors:
+            if acceptor.accept(n, proposed_value):
+                accepted.append(acceptor)
+        
+        if len(accepted) >= len(self.acceptors) // 2 + 1:
+            return proposed_value  # 达成共识
+        return None
+    
+    def prepare(self, n):
+        """接受者：处理Prepare请求"""
+        if n > self.promised_number:
+            self.promised_number = n
+            return Promise(n, self.accepted_value, self.accepted_number)
+        return None
+    
+    def accept(self, n, value):
+        """接受者：处理Accept请求"""
+        if n >= self.promised_number:
+            self.promised_number = n
+            self.accepted_number = n
+            self.accepted_value = value
+            return True
+        return False
+
+
+class Promise:
+    """承诺响应"""
+    def __init__(self, n, accepted_value, accepted_number):
+        self.n = n
+        self.accepted_value = accepted_value
+        self.accepted_number = accepted_number
+```
+
+### Raft 实现示例
+
+```python
+import random
+import time
+
+class RaftNode:
+    """Raft节点实现（简化版）"""
+    
+    def __init__(self, node_id, peers):
+        self.node_id = node_id
+        self.peers = peers
+        self.state = "follower"  # follower, candidate, leader
+        self.current_term = 0
+        self.voted_for = None
+        self.log = []
+        self.commit_index = 0
+        self.last_applied = 0
+        self.election_timeout = random.randint(150, 300)  # ms
+    
+    def start_election(self):
+        """发起选举"""
+        self.state = "candidate"
+        self.current_term += 1
+        self.voted_for = self.node_id
+        
+        # 向所有peers请求投票
+        votes = 1  # 自己投票
+        for peer in self.peers:
+            if peer.request_vote(self.current_term, self.node_id):
+                votes += 1
+        
+        # 检查是否获得多数投票
+        if votes > len(self.peers) // 2:
+            self.state = "leader"
+            self.send_heartbeat()
+    
+    def request_vote(self, term, candidate_id):
+        """处理投票请求"""
+        if term > self.current_term:
+            self.current_term = term
+            self.state = "follower"
+            self.voted_for = None
+        
+        if term == self.current_term and (
+            self.voted_for is None or self.voted_for == candidate_id
+        ):
+            self.voted_for = candidate_id
+            self.reset_election_timeout()
+            return True
+        return False
+    
+    def send_heartbeat(self):
+        """发送心跳"""
+        if self.state == "leader":
+            for peer in self.peers:
+                peer.append_entries(self.current_term, self.log)
+    
+    def append_entries(self, term, leader_log):
+        """处理日志追加请求"""
+        if term >= self.current_term:
+            self.current_term = term
+            self.state = "follower"
+            self.reset_election_timeout()
+            return True
+        return False
+    
+    def reset_election_timeout(self):
+        """重置选举超时"""
+        self.election_timeout = random.randint(150, 300)
+```
+
+---
+
+## 共识失败案例分析
+
+### 案例1：网络分区导致的脑裂
+
+**场景**：5节点集群，节点1-2与节点3-5网络分区。
+
+```
+初始状态：
+  节点1是Leader，任期1
+
+分区发生：
+  节点1-2无法联系节点3-5
+  节点1心跳无法到达节点3-5
+
+节点3-5触发选举：
+  节点3发起选举 → 获得节点4-5投票（3票）
+  节点3成为新Leader，任期2
+
+脑裂状态：
+  节点1-2认为节点1是Leader
+  节点3-5认为节点3是Leader
+
+问题：
+  客户端写入节点1 → 只复制到节点2
+  客户端写入节点3 → 只复制到节点4-5
+  数据不一致！
+
+解决（Raft机制）：
+  节点1心跳失败 → 降级为follower
+  节点1发现任期2更高 → 放弃Leader身份
+  最终只有一个Leader
+```
+
+**教训**：网络分区是分布式系统的常见故障，共识算法需要能检测和处理。
+
+### 案例2：提案编号冲突
+
+**场景**：两个Proposer同时提案。
+
+```
+时刻1：Proposer A发起Prepare(n=1)
+时刻2：Proposer B发起Prepare(n=2)
+时刻3：Acceptor收到B的Prepare → 承诺n=2
+时刻4：Acceptor收到A的Prepare → 拒绝（n=1 < n=2）
+
+Proposer A的提案被拒绝：
+  A需要重新发起更高编号的提案
+  可能导致活锁（A和B不断竞争）
+
+解决：
+  随机延迟重试
+  或使用唯一编号（如节点ID + 时间戳）
+```
+
+**教训**：多个Proposer同时提案会导致竞争，需要设计冲突解决机制。
+
+### 案例3：Leader失败后的数据丢失
+
+**场景**：Leader日志未完全复制就失败。
+
+```
+时刻1：Leader收到客户端请求，追加日志
+时刻2：Leader向Follower发送AppendEntries
+时刻3：只有Follower1收到日志（网络问题）
+时刻4：Leader失败
+
+新Leader选举：
+  Follower2成为新Leader（日志较短）
+  Follower1的额外日志被覆盖？
+
+Raft机制保证：
+  新Leader必须包含所有已提交日志
+  未提交日志会被新Leader覆盖
+  这是正确行为（未提交 = 不保证持久化）
+```
+
+**教训**：只有已提交（多数复制）的日志才能保证持久化。
+
+---
+
+
 ### 1. 模拟Raft选举
 
 场景：5个节点，节点1是Leader。

@@ -438,3 +438,415 @@ Tabu-Search:
 ---
 
 **下一节**：我们将深入讨论LLM时代的NP完全性——验证哲学如何指导LLM系统设计。
+
+---
+
+## 代码实现：顶点覆盖2-近似算法
+
+### 完整Python实现
+
+```python
+from typing import List, Tuple, Set, Dict
+from collections import defaultdict
+
+class Graph:
+    """图的邻接表表示，支持顶点覆盖近似算法"""
+    
+    def __init__(self):
+        self.adj: Dict[int, Set[int]] = defaultdict(set)
+        self.vertices: Set[int] = set()
+    
+    def add_edge(self, u: int, v: int) -> None:
+        """添加边 (u, v)"""
+        if u == v:
+            raise ValueError(f"自环边 ({u}, {v}) 不允许")
+        self.adj[u].add(v)
+        self.adj[v].add(u)
+        self.vertices.add(u)
+        self.vertices.add(v)
+    
+    def edges(self) -> List[Tuple[int, int]]:
+        """返回所有边，每条边只出现一次（u < v）"""
+        result = []
+        for u in self.adj:
+            for v in self.adj[u]:
+                if u < v:
+                    result.append((u, v))
+        return result
+    
+    def vertex_cover_exact(self) -> Set[int]:
+        """
+        精确顶点覆盖（暴力枚举，仅用于小图验证）
+        时间复杂度：O(2^n)
+        """
+        n = len(self.vertices)
+        vertices_list = list(self.vertices)
+        edges = self.edges()
+        
+        if not edges:
+            return set()
+        
+        # 从小到大尝试覆盖大小
+        for size in range(1, n + 1):
+            # 枚举所有大小为size的顶点子集
+            from itertools import combinations
+            for cover in combinations(vertices_list, size):
+                cover_set = set(cover)
+                # 检查是否覆盖所有边
+                if all(u in cover_set or v in cover_set for u, v in edges):
+                    return cover_set
+        
+        return self.vertices  # 最坏情况
+    
+    def approx_vertex_cover(self) -> Set[int]:
+        """
+        顶点覆盖的2-近似算法
+        
+        算法：
+        1. 初始化覆盖集 C = ∅
+        2. 当图中还有边时：
+           a. 任选一条边 (u, v)
+           b. 将 u 和 v 都加入 C
+           c. 删除所有与 u 或 v 相连的边
+        3. 返回 C
+        
+        近似比保证：|C| ≤ 2 × OPT
+        
+        时间复杂度：O(|E|)
+        空间复杂度：O(|V|)
+        
+        Returns:
+            顶点覆盖集合
+        """
+        cover: Set[int] = set()
+        remaining_edges = set(self.edges())  # 使用集合快速删除
+        
+        while remaining_edges:
+            # 任选一条边
+            u, v = next(iter(remaining_edges))
+            
+            # 将两个端点都加入覆盖集
+            cover.add(u)
+            cover.add(v)
+            
+            # 删除所有与 u 或 v 相连的边
+            edges_to_remove = set()
+            for edge in remaining_edges:
+                if u in edge or v in edge:
+                    edges_to_remove.add(edge)
+            
+            remaining_edges -= edges_to_remove
+        
+        return cover
+
+
+def approx_vertex_cover_from_edges(edges: List[Tuple[int, int]]) -> Set[int]:
+    """
+    从边列表计算顶点覆盖的便捷函数
+    
+    Args:
+        edges: 边列表，每条边是 (u, v) 元组
+        
+    Returns:
+        顶点覆盖集合
+        
+    Raises:
+        ValueError: 如果边列表为空或包含无效边
+    """
+    if not edges:
+        return set()
+    
+    g = Graph()
+    for u, v in edges:
+        if not isinstance(u, int) or not isinstance(v, int):
+            raise TypeError(f"顶点必须是整数，得到 ({type(u)}, {type(v)})")
+        g.add_edge(u, v)
+    
+    return g.approx_vertex_cover()
+
+
+def verify_vertex_cover(edges: List[Tuple[int, int]], cover: Set[int]) -> bool:
+    """
+    验证一个顶点覆盖是否正确
+    
+    Args:
+        edges: 边列表
+        cover: 待验证的顶点覆盖
+        
+    Returns:
+        True 如果是有效的顶点覆盖，False 否则
+    """
+    for u, v in edges:
+        if u not in cover and v not in cover:
+            return False
+    return True
+
+
+def calculate_approximation_ratio(
+    approx_cover: Set[int], 
+    optimal_cover: Set[int]
+) -> float:
+    """
+    计算近似比
+    
+    Args:
+        approx_cover: 近似算法得到的覆盖
+        optimal_cover: 最优覆盖
+        
+    Returns:
+        近似比（≥1，越小越好）
+    """
+    if not optimal_cover:
+        return 1.0 if not approx_cover else float('inf')
+    return len(approx_cover) / len(optimal_cover)
+
+
+# ==================== 测试用例 ====================
+
+import unittest
+
+class TestVertexCoverApproximation(unittest.TestCase):
+    """顶点覆盖2-近似算法测试"""
+    
+    def test_empty_graph(self):
+        """测试空图"""
+        g = Graph()
+        self.assertEqual(g.approx_vertex_cover(), set())
+        self.assertEqual(g.vertex_cover_exact(), set())
+    
+    def test_single_edge(self):
+        """测试单边图"""
+        g = Graph()
+        g.add_edge(1, 2)
+        cover = g.approx_vertex_cover()
+        self.assertEqual(cover, {1, 2})
+        self.assertTrue(verify_vertex_cover(g.edges(), cover))
+    
+    def test_path_graph(self):
+        """测试路径图：1-2-3-4"""
+        g = Graph()
+        g.add_edge(1, 2)
+        g.add_edge(2, 3)
+        g.add_edge(3, 4)
+        
+        cover = g.approx_vertex_cover()
+        exact = g.vertex_cover_exact()
+        
+        # 验证覆盖正确性
+        self.assertTrue(verify_vertex_cover(g.edges(), cover))
+        
+        # 验证近似比 ≤ 2
+        ratio = calculate_approximation_ratio(cover, exact)
+        self.assertLessEqual(ratio, 2.0)
+        
+        print(f"路径图: 近似解大小={len(cover)}, 最优解大小={len(exact)}, 近似比={ratio:.2f}")
+    
+    def test_cycle_graph(self):
+        """测试环图：三角形"""
+        g = Graph()
+        g.add_edge(1, 2)
+        g.add_edge(2, 3)
+        g.add_edge(3, 1)
+        
+        cover = g.approx_vertex_cover()
+        exact = g.vertex_cover_exact()
+        
+        # 三角形最优解是2个顶点
+        self.assertEqual(len(exact), 2)
+        
+        # 近似解最多4个顶点（2×2）
+        self.assertLessEqual(len(cover), 4)
+        
+        ratio = calculate_approximation_ratio(cover, exact)
+        self.assertLessEqual(ratio, 2.0)
+        
+        print(f"三角形: 近似解大小={len(cover)}, 最优解大小={len(exact)}, 近似比={ratio:.2f}")
+    
+    def test_star_graph(self):
+        """测试星形图：中心连接所有其他顶点"""
+        g = Graph()
+        center = 0
+        for i in range(1, 6):
+            g.add_edge(center, i)
+        
+        cover = g.approx_vertex_cover()
+        exact = g.vertex_cover_exact()
+        
+        # 星形图最优解是1个顶点（中心）
+        self.assertEqual(len(exact), 1)
+        
+        # 近似解最多2个顶点
+        self.assertLessEqual(len(cover), 2)
+        
+        ratio = calculate_approximation_ratio(cover, exact)
+        self.assertLessEqual(ratio, 2.0)
+        
+        print(f"星形图: 近似解大小={len(cover)}, 最优解大小={len(exact)}, 近似比={ratio:.2f}")
+    
+    def test_complete_graph(self):
+        """测试完全图 K4"""
+        g = Graph()
+        vertices = [1, 2, 3, 4]
+        for i in range(len(vertices)):
+            for j in range(i + 1, len(vertices)):
+                g.add_edge(vertices[i], vertices[j])
+        
+        cover = g.approx_vertex_cover()
+        exact = g.vertex_cover_exact()
+        
+        # K4最优解是3个顶点
+        self.assertEqual(len(exact), 3)
+        
+        ratio = calculate_approximation_ratio(cover, exact)
+        self.assertLessEqual(ratio, 2.0)
+        
+        print(f"完全图K4: 近似解大小={len(cover)}, 最优解大小={len(exact)}, 近似比={ratio:.2f}")
+    
+    def test_disconnected_graph(self):
+        """测试不连通图"""
+        g = Graph()
+        # 两个独立的边
+        g.add_edge(1, 2)
+        g.add_edge(3, 4)
+        
+        cover = g.approx_vertex_cover()
+        exact = g.vertex_cover_exact()
+        
+        # 最优解：{1, 3} 或 {2, 4} 等，大小为2
+        self.assertEqual(len(exact), 2)
+        
+        ratio = calculate_approximation_ratio(cover, exact)
+        self.assertLessEqual(ratio, 2.0)
+    
+    def test_large_graph(self):
+        """测试较大图的性能"""
+        import random
+        random.seed(42)
+        
+        g = Graph()
+        # 随机生成50个顶点，100条边
+        vertices = list(range(50))
+        edges_added = 0
+        attempts = 0
+        max_attempts = 10000
+        
+        while edges_added < 100 and attempts < max_attempts:
+            u, v = random.sample(vertices, 2)
+            if v not in g.adj[u]:
+                g.add_edge(u, v)
+                edges_added += 1
+            attempts += 1
+        
+        # 近似算法应该很快
+        import time
+        start = time.time()
+        cover = g.approx_vertex_cover()
+        elapsed = time.time() - start
+        
+        self.assertTrue(verify_vertex_cover(g.edges(), cover))
+        self.assertLess(elapsed, 1.0)  # 应该在1秒内完成
+        
+        print(f"大图(50顶点100边): 近似解大小={len(cover)}, 耗时={elapsed:.4f}秒")
+    
+    def test_self_loop_error(self):
+        """测试自环边应抛出异常"""
+        g = Graph()
+        with self.assertRaises(ValueError):
+            g.add_edge(1, 1)
+    
+    def test_invalid_vertex_type(self):
+        """测试无效顶点类型"""
+        with self.assertRaises(TypeError):
+            approx_vertex_cover_from_edges([("a", "b")])
+    
+    def test_convenience_function(self):
+        """测试便捷函数"""
+        edges = [(1, 2), (2, 3), (3, 4)]
+        cover = approx_vertex_cover_from_edges(edges)
+        self.assertTrue(verify_vertex_cover(edges, cover))
+
+
+def run_demo():
+    """演示2-近似算法的效果"""
+    print("=" * 60)
+    print("顶点覆盖2-近似算法演示")
+    print("=" * 60)
+    
+    test_cases = [
+        ("路径图 1-2-3-4", [(1, 2), (2, 3), (3, 4)]),
+        ("三角形", [(1, 2), (2, 3), (3, 1)]),
+        ("星形图", [(0, 1), (0, 2), (0, 3), (0, 4), (0, 5)]),
+        ("完全图 K4", [(1, 2), (1, 3), (1, 4), (2, 3), (2, 4), (3, 4)]),
+    ]
+    
+    for name, edges in test_cases:
+        g = Graph()
+        for u, v in edges:
+            g.add_edge(u, v)
+        
+        approx = g.approx_vertex_cover()
+        exact = g.vertex_cover_exact()
+        ratio = calculate_approximation_ratio(approx, exact)
+        
+        print(f"\n{name}:")
+        print(f"  边数: {len(edges)}")
+        print(f"  近似解: {sorted(approx)}, 大小={len(approx)}")
+        print(f"  最优解: {sorted(exact)}, 大小={len(exact)}")
+        print(f"  近似比: {ratio:.2f}")
+
+
+if __name__ == "__main__":
+    # 运行演示
+    run_demo()
+    print("\n" + "=" * 60)
+    print("运行单元测试...")
+    print("=" * 60 + "\n")
+    
+    # 运行测试
+    unittest.main(verbosity=2)
+```
+
+### 使用示例
+
+```python
+# 创建图
+g = Graph()
+g.add_edge(1, 2)
+g.add_edge(2, 3)
+g.add_edge(3, 4)
+g.add_edge(4, 5)
+
+# 计算2-近似顶点覆盖
+cover = g.approx_vertex_cover()
+print(f"顶点覆盖: {cover}")  # 例如: {2, 3, 4, 5}
+
+# 验证覆盖正确性
+is_valid = verify_vertex_cover(g.edges(), cover)
+print(f"覆盖有效: {is_valid}")  # True
+
+# 与最优解比较
+optimal = g.vertex_cover_exact()
+ratio = calculate_approximation_ratio(cover, optimal)
+print(f"近似比: {ratio:.2f}")  # ≤ 2.0
+```
+
+### 算法复杂度分析
+
+| 算法 | 时间复杂度 | 空间复杂度 | 近似比 |
+|------|------------|------------|--------|
+| 2-近似算法 | O(\|E\|) | O(\|V\| + \|E\|) | ≤ 2 |
+| 精确算法（暴力） | O(2^n) | O(n) | 1（最优） |
+
+### 近似比证明
+
+**定理**：该算法是2-近似的。
+
+**证明**：
+1. 设算法选了 k 条边，则 \|C\| = 2k（每条边选2个顶点）
+2. 这 k 条边不共享顶点（算法保证）
+3. 最优解 OPT 必须覆盖这 k 条边
+4. 每个顶点最多覆盖一条被选边（边不共享顶点）
+5. 因此 OPT ≥ k
+6. 近似比：\|C\| / OPT = 2k / k = 2
+
+**注意**：这是最坏情况分析。实际中，近似比通常远小于2。

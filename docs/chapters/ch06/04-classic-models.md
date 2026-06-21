@@ -327,19 +327,21 @@ def cut_rod(price, n):
 
 **状态**：dp[i][j] = 矩阵 A_i..A_j 的最少乘法次数。
 
-**递推**：dp[i][j] = min(dp[i][k] + dp[k+1][j] + p_{i-1}p_k p_j) for k in i..j-1
+**递推**：dp[i][j] = min(dp[i][k] + dp[k+1][j] + p_{i-1} × p_k × p_j) for k in i..j-1
+
+> **索引约定说明**：上述公式使用 **1-based 索引**（矩阵编号为 A₁, A₂, ...）。矩阵 A_i 的维度为 p_{i-1} × p_i。若使用 **0-based 累引**（代码中），矩阵编号为 A₀, A₁, A₂, ...，矩阵 A_i 的维度为 p[i] × p[i+1]，成本公式变为 `p[i] × p[k+1] × p[j+1]`。两种表示等价，只需注意 i、j、k 的起止范围不同（1-based: i,j ∈ {1..n}，0-based: i,j ∈ {0..n-1}）。
 
 ```python
 def matrix_chain(p):
-    n = len(p) - 1
+    n = len(p) - 1  # n 个矩阵
     dp = [[0] * n for _ in range(n)]
     
-    for l in range(2, n + 1):
-        for i in range(n - l + 1):
-            j = i + l - 1
+    for l in range(2, n + 1):  # 区间长度从 2 到 n
+        for i in range(n - l + 1):  # 0-based: i ∈ {0..n-l}
+            j = i + l - 1  # 0-based: j ∈ {l-1..n-1}
             dp[i][j] = float('inf')
-            for k in range(i, j):
-                cost = dp[i][k] + dp[k+1][j] + p[i] * p[k+1] * p[j+1]
+            for k in range(i, j):  # 分割点 k ∈ {i..j-1}
+                cost = dp[i][k] + dp[k+1][j] + p[i] * p[k+1] * p[j+1]  # 0-based 成本公式
                 dp[i][j] = min(dp[i][j], cost)
     
     return dp[0][n-1]
@@ -453,7 +455,7 @@ $$s[i][j-1] \leq s[i][j] \leq s[i+1][j]$$
 
 ```python
 def matrix_chain_knuth(p):
-    n = len(p) - 1
+    n = len(p) - 1  # n 个矩阵
     dp = [[0] * n for _ in range(n)]
     s = [[0] * n for _ in range(n)]  # 最优分割点
     
@@ -461,15 +463,15 @@ def matrix_chain_knuth(p):
     for i in range(n):
         s[i][i] = i
     
-    for l in range(2, n + 1):
-        for i in range(n - l + 1):
-            j = i + l - 1
+    for l in range(2, n + 1):  # 区间长度从 2 到 n
+        for i in range(n - l + 1):  # 0-based: i ∈ {0..n-l}
+            j = i + l - 1  # 0-based: j ∈ {l-1..n-1}
             dp[i][j] = float('inf')
             # 利用单调性：k 的范围缩小
             k_start = s[i][j-1] if l > 2 else i
             k_end = s[i+1][j] if l > 2 else j-1
             for k in range(k_start, k_end + 1):
-                cost = dp[i][k] + dp[k+1][j] + p[i] * p[k+1] * p[j+1]
+                cost = dp[i][k] + dp[k+1][j] + p[i] * p[k+1] * p[j+1]  # 0-based 成本公式
                 if cost < dp[i][j]:
                     dp[i][j] = cost
                     s[i][j] = k
@@ -699,9 +701,9 @@ def optimal_bst(freq, n):
     for i in range(n):
         dp[i][i] = freq[i]
     
-    for l in range(2, n + 1):
-        for i in range(n - l + 1):
-            j = i + l - 1
+    for l in range(2, n + 1):  # 区间长度从 2 到 n
+        for i in range(n - l + 1):  # 0-based: i ∈ {0..n-l}
+            j = i + l - 1  # 0-based: j ∈ {l-1..n-1}
             dp[i][j] = float('inf')
             for k in range(i, j + 1):
                 cost = (dp[i][k-1] if k > i else 0) + \
@@ -808,18 +810,18 @@ def edit_distance_with_operations(X, Y):
 
 ```python
 def matrix_chain_knuth(p):
-    n = len(p) - 1
+    n = len(p) - 1  # n 个矩阵
     dp = [[0] * n for _ in range(n)]
     s = [[0] * n for _ in range(n)]  # 最优分割点
     
-    for l in range(2, n + 1):
-        for i in range(n - l + 1):
-            j = i + l - 1
+    for l in range(2, n + 1):  # 区间长度从 2 到 n
+        for i in range(n - l + 1):  # 0-based: i ∈ {0..n-l}
+            j = i + l - 1  # 0-based: j ∈ {l-1..n-1}
             dp[i][j] = float('inf')
             # 利用单调性：k 的范围缩小
             for k in range(s[i][j-1] if j > i + 1 else i, 
                           s[i+1][j] if j > i + 1 else j):
-                cost = dp[i][k] + dp[k+1][j] + p[i] * p[k+1] * p[j+1]
+                cost = dp[i][k] + dp[k+1][j] + p[i] * p[k+1] * p[j+1]  # 0-based 成本公式
                 if cost < dp[i][j]:
                     dp[i][j] = cost
                     s[i][j] = k
